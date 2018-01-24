@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# main functon for running scripts and testing lego project
 import serial
 import socket
 import time

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Grasping strategy for each classified object
+# Functions for interfacing with UR and Arduinos, see UR script(on robot) and ser_ee srcipt(on arduino) for more detail
 import socket
 import serial
 import time
@@ -22,11 +22,10 @@ import ur_waypoints as iw
 # 7 - queries UR for current Joint torques, Variable = n.a., UR returns string "[torques]"
 # 8 - moves linearly to Pose, Variable = max joint speed, UR returns string "completed_linear_move" upon completion
 # 9 - 2 with max acceleration and speed
-# 10 - calculates inverse kinematics of input pose, Variable = n.a., UR returns string "[current_Joints]"
+# 10 - calculates inverse kinematics of input pose, Variable = n.a., UR returns string "[Joints]"
+# 11 - calculates new pose from current position and given transformation pose (transformation pose in end-effector co-ords), Variable = n.a., UR returns string "p[Pose]"
 #
-# 100 - select APC tool, Variable = n.a., UR returns string "tool_n_selected"
-# 200 - select IROS tool, Variable = n.a., UR returns string "iros_tool_n_selected"
-# 200 - select Lego tool, Variable = n.a., UR returns string "lego_tool_n_selected"
+# 300 - select Lego tool, Variable = n.a., UR returns string "lego_tool_n_selected"
 def socket_send(c, sPose=dict(iw.home), sSpeed = 0.75, sCMD = 0):
     sendPose = dict(sPose)
     msg = "Failed"
@@ -43,11 +42,18 @@ def socket_send(c, sPose=dict(iw.home), sSpeed = 0.75, sCMD = 0):
     # Return reply
     return msg
 
+# Serial CMDs, now redundant
+# Send id(chr), var(int), \n as a string to the Arduino using serial connection ser_ee
+# Returns null
+# List of CMDs to Arduino id = 'G':
+# 48 - stop motor, reset timeout
+# 49 - close grabber, long timeout
+# 50 - open grabber, long timeout
+# 51 - open grabber, short timeout
 def serial_send(ser_ee,id,var):
     # Serial CMDs
     #print "Sending end effector move"
     ser_ee.flush
-    # Set Actuator position, min = 0, max = 80
     ser_ee.write(id + chr(var) + "\n")
     # Wait for end effector arduino to finish
     while True:
@@ -57,11 +63,11 @@ def serial_send(ser_ee,id,var):
             break
     return
 
+# Same function as serial_send, waits for 2 conformations, useful for confirmation of command recieved later grabber finished
 def super_serial_send(ser_ee,id,var):
     # Serial CMDs
     #print "Sending end effector move"
     ser_ee.flush
-    # Set Actuator position, min = 0, max = 80
     ser_ee.write(id + chr(var) + "\n")
     # Wait for end effector arduino to finish
     while True:
@@ -74,35 +80,6 @@ def super_serial_send(ser_ee,id,var):
         #print ipt
         if ipt == "done\r\n":
             break
-    return
-
-# Safe Move CMDs
-# Send socket and serial CMDs
-# Returns reply from UR
-def safe_move(c,ser_ee,Pose=dict(iw.home),Speed=0.75,Grip=dict(iw.ee_home),CMD=4):
-    # Socket CMDs
-    #print "Sending ur move"
-    msg = safe_ur_move(c,dict(Pose),CMD,Speed=Speed)
-
-    # Serial CMDs
-    #print "Sending end effector move"
-    end_effector_move(ser_ee,dict(Grip))
-    return msg
-
-#
-#
-#
-def end_effector_move(ser_ee,Grip):
-    # Serial CMDs
-    serial_send(ser_ee,"A",Grip["act"])
-    ipt = ser_ee.readline()
-    #print "sw state = ",ipt
-    ipt = ser_ee.readline()
-    #print "Timeout = ",ipt
-
-    serial_send(ser_ee,"G",Grip["servo"])
-
-    serial_send(ser_ee,"T",Grip["tilt"])
     return
 
 # Safe Move CMDs
@@ -160,9 +137,8 @@ def get_position(c,ser_ee,Pose=dict(iw.home),Speed=0.75,CMD=1):
 
     return current_position, current_grip 
 
-#
-#
-#
+# Decodes joint and pose vectors from UR
+# Returns list of decoded values
 def get_ur_position(c,CMD,gPose=dict(iw.home),gSpeed=0.75):
     # Initialize variables
     sendPose = dict(gPose)
@@ -205,9 +181,9 @@ def get_ur_position(c,CMD,gPose=dict(iw.home),gSpeed=0.75):
     #print "decoded msg: ",current_position
     return current_position
 
-#
-#
-#
+# Currently unused
+# Decodes info from arduino
+# Returns list of decoded values
 def get_ee_position(ser_ee):
     # Initialize variables
     ipta = "0"
@@ -235,23 +211,6 @@ def get_ee_position(ser_ee):
 
     return [int(ipta)+300, int(iptb), int(iptc), int(iptd)] 
 
-
-# Query CMDs
-# Send socket CMD=6
-# Unused as force now sent as a vector and decoded by get_position()
-def get_force(c):
-    msg = socket_send(c, sPose=dict(iw.home), sCMD=6)
-    #print "force: ", msg
-    return msg
-
-# Query CMDs
-# Send socket CMD=7
-# Unused as torque now sent as a vector and decoded by get_position()
-def get_torque(c):
-    msg = socket_send(c, sPose=dict(iw.home), sCMD=7)
-    #print "torque: ", msg
-    return msg
-
 # Finds new pose linearly interpotlated from Pose2 to Pose1
 # Returns new pose
 def interpolate_pose(Pose1, Pose2, alpha):
@@ -265,23 +224,3 @@ def interpolate_pose(Pose1, Pose2, alpha):
     i_Pose["ry"] = alpha*i_Pose1["ry"] + (1.0-alpha)*i_Pose2["ry"]
     i_Pose["rz"] = alpha*i_Pose1["rz"] + (1.0-alpha)*i_Pose2["rz"]
     return i_Pose
-
-# Alternate end effector arduino CMD
-# Returns switch state(0=open, 1=closed), data(timed out if !=0)
-def ee_pinch(ser_ee, act):
-    ser_ee.flush
-    print "Sending end effector move"
-    # Set Pinch position, min = 0, max = 80
-    ser_ee.write("P" + chr(act) + "\n")
-    # Wait for end effector arduino to finish 
-    while True:
-        ipt = ser_ee.readline()
-        print ipt
-        if ipt == "done\r\n":
-            break
-    # Red additional data
-    msg = ser_ee.readline()
-    msg = int(msg[0:len(msg)-2])
-    timeout = ser_ee.readline()
-    timeout = int(timeout[0:len(timeout)-2])
-    return msg, timeout

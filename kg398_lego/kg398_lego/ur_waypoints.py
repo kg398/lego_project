@@ -4,13 +4,11 @@ import math
 
 # Pose = [x, y, z, rx, ry, rz]
 # Joints = [base, shoulder, elbow, wrist 1, wrist 2, wrist 3]
+# home position, arbitrary
 home = {"x": 90.0, "y": -500.0, "z": 100.0, "rx": 0.0, "ry": 180.0, "rz": 0.0}
 home_joints = {"x": 87.61, "y": -87.40, "z": 100.79, "rx": -103.37, "ry": -89.70, "rz": -2.26}
 
-ee_home = {"act": 80, "servo": 120, "tilt": 58}
-
-grabbing_joints_waypoint = {"x": -27.33, "y": -83.04, "z": 105.47, "rx": -21.80, "ry": -27.13, "rz": -225.00}
-
+# Lego calibration points
 grid_0_1 = {"x": -100.29, "y": -356.57, "z": 7.37, "rx": 0.0765*180/math.pi, "ry": 3.1408*180/math.pi, "rz": 0.0001*180/math.pi}
 grid_0_1_joints = {"x": 57.92, "y": -76.53, "z": 142.74, "rx": -155.19, "ry": -89.90, "rz": -28.97}
 
