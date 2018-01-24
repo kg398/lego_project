@@ -33,11 +33,11 @@ def socket_send(c, sPose=dict(iw.home), sSpeed = 0.75, sCMD = 0):
     try:
         # Send formatted CMD
         c.send("("+str(sendPose["x"])+","+str(sendPose["y"])+","+str(sendPose["z"])+","+str(sendPose["rx"])+","+str(sendPose["ry"])+","+str(sendPose["rz"])+","+str(sCMD)+","+str(sSpeed)+")");
-        print "Sent ur move"
+        #print "Sent ur move"
         # Wait for reply
         msg=c.recv(1024)
-        print msg
-        print ""
+        #print msg
+        #print ""
     except socket.error as socketerror:
         print ".......................Some kind of error :(......................."
     # Return reply
@@ -52,7 +52,7 @@ def serial_send(ser_ee,id,var):
     # Wait for end effector arduino to finish
     while True:
         ipt = ser_ee.readline()
-        print ipt
+        #print ipt
         if ipt == "done\r\n":
             break
     return
@@ -66,12 +66,12 @@ def super_serial_send(ser_ee,id,var):
     # Wait for end effector arduino to finish
     while True:
         ipt = ser_ee.readline()
-        print ipt
+        #print ipt
         if ipt == "done\r\n":
             break
     while True:
         ipt = ser_ee.readline()
-        print ipt
+        #print ipt
         if ipt == "done\r\n":
             break
     return
@@ -81,11 +81,11 @@ def super_serial_send(ser_ee,id,var):
 # Returns reply from UR
 def safe_move(c,ser_ee,Pose=dict(iw.home),Speed=0.75,Grip=dict(iw.ee_home),CMD=4):
     # Socket CMDs
-    print "Sending ur move"
+    #print "Sending ur move"
     msg = safe_ur_move(c,dict(Pose),CMD,Speed=Speed)
 
     # Serial CMDs
-    print "Sending end effector move"
+    #print "Sending end effector move"
     end_effector_move(ser_ee,dict(Grip))
     return msg
 

@@ -5,10 +5,12 @@ import time
 import random
 import copy
 import math
+import numpy as np
 
 import ur_interface_cmds as ic
 import ur_waypoints as wp
 import lego_moves as lm
+import file_decoder as fd
 
 def initialize():
     #HOST = "169.254.103.235" # The remote host
@@ -45,15 +47,15 @@ def main():
     while True:
         task = raw_input("task: ")
         if task == "cal":
-            #ipt = raw_input("Continue?")
-            #lm.grid_pick(c,ser_ee,0,1,0,0)
-            #lm.grid_place(c,ser_ee,0,1,0,0)
-            #ipt = raw_input("Continue?")
-            #lm.grid_pick(c,ser_ee,30,1,0,0)
-            #lm.grid_place(c,ser_ee,30,1,0,0)
-            #ipt = raw_input("Continue?")
-            #lm.grid_pick(c,ser_ee,30,13,0,0)
-            #lm.grid_place(c,ser_ee,30,13,0,0)
+            ipt = raw_input("Continue?")
+            lm.grid_pick(c,ser_ee,0,1,0,0)
+            lm.grid_place(c,ser_ee,0,1,0,0)
+            ipt = raw_input("Continue?")
+            lm.grid_pick(c,ser_ee,30,1,0,0)
+            lm.grid_place(c,ser_ee,30,1,0,0)
+            ipt = raw_input("Continue?")
+            lm.grid_pick(c,ser_ee,30,13,0,0)
+            lm.grid_place(c,ser_ee,30,13,0,0)
             ipt = raw_input("Continue?")
             lm.grid_pick(c,ser_ee,0,13,0,0)
             lm.grid_place(c,ser_ee,0,13,0,0)
@@ -91,6 +93,11 @@ def main():
 #                        lm.grid_place(c,ser_ee,27-j*8,7-k*6,4,0)
 #                    msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
         if task == "lego":
+            ic.socket_send(c,sCMD=300)
+            R = int(raw_input("angle:"))
+            lm.grid_pick(c,ser_ee,1,1,5,R)
+            lm.grid_place(c,ser_ee,1,1,5,R)
+        if task == "pt":
             #time.sleep(5)
             ipt = raw_input("Open?(y/n)")
             if ipt == "y":
@@ -98,12 +105,12 @@ def main():
             for i in range(0,4):
                 for j in range(0,4):
                     for k in range(0,2):
-                        lm.grid_pick(c,ser_ee,((j+k)*8+3)%32,k*6+1,12,0)
-                        lm.grid_place(c,ser_ee,((j+k+1)*8+3)%32,k*6+7,12,0)
+                        lm.grid_pick(c,ser_ee,((j+k)*8+3)%32,k*6+1,1,0)
+                        lm.grid_place(c,ser_ee,((j+k+1)*8+3)%32,k*6+7,1,0)
                     msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
                 for j in range(0,4):
-                    lm.grid_pick(c,ser_ee,j*8+3,13,12,0)
-                    lm.grid_place(c,ser_ee,((j+1)*8+3)%32,1,12,0)
+                    lm.grid_pick(c,ser_ee,j*8+3,13,1,0)
+                    lm.grid_place(c,ser_ee,((j+1)*8+3)%32,1,1,0)
                 msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
         if task == "wp":
             msg = ic.safe_ur_move(c,Pose=dict(wp.grid_0_1_joints),CMD=2)
@@ -114,6 +121,18 @@ def main():
             current_Joints, current_Grip = ic.get_ur_position(c,3)
             print "current joints: ", current_Joints
 
+        if task == "file":
+            ipt = raw_input("Open?(y/n)")
+            if ipt == "y":
+                ic.super_serial_send(ser_ee,"G",51)
+            model = fd.import_file("example.txt")
+            bricks = fd.decode_file(model)
+            que = fd.sort_bricks_dis(bricks,model)
+            #print bricks
+            #ipt = raw_input("continue?")
+            #lm.assemble(c,ser_ee,bricks)
+            #ipt = raw_input("continue?")
+            #lm.disassemble(c,ser_ee,bricks)
         if task == "i":
             print ser_ee.readline()
             

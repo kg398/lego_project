@@ -10,6 +10,33 @@ import numpy as np
 import ur_interface_cmds as ic
 import ur_waypoints as wp
 
+def assemble(c,ser_ee,bricks):
+    for i in range(0,len(bricks)):
+        feed_pick(c,ser_ee)
+
+        grid_place(c,ser_ee,bricks[i]['px'],bricks[i]['py'],bricks[i]['z'],bricks[i]['r'])
+
+        
+        msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
+    return
+
+def disassemble(c,ser_ee,bricks):
+    for i in range(0,len(bricks)):
+        grid_pick(c,ser_ee,bricks[len(bricks)-i-1]['px'],bricks[len(bricks)-i-1]['py'],bricks[len(bricks)-i-1]['z'],bricks[len(bricks)-i-1]['r'])
+        
+        feed_place(c,ser_ee)
+        
+        msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
+    return
+
+def feed_pick(c,ser_ee):
+    grid_pick(c,ser_ee,30,1,0,0)
+    return
+
+def feed_place(c,ser_ee):
+    grid_place(c,ser_ee,30,1,0,0)
+    return
+
 def grid_pick(c,ser_ee,x,y,z,r):
     ic.socket_send(c,sCMD=300)
 
@@ -26,12 +53,13 @@ def grid_pick(c,ser_ee,x,y,z,r):
 
     ic.super_serial_send(ser_ee,"G",49)
 
-    demand_Pose = dict(smooth_rotate(c,0,R=20))
+
+    demand_Pose = dict(smooth_rotate(c,r,R=20))
     #print "demand_Pose: ",demand_Pose
     #ipt = raw_input("continue?")
     msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)
 
-    demand_Joints = dict(grid_pos(c,x,y,z+1,r))
+    demand_Joints = dict(grid_pos(c,x,y,z+2,r))
     msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.5)
 
 def stack_pick(c,ser_ee,x,y,z,r,stack=1):
@@ -47,7 +75,7 @@ def stack_pick(c,ser_ee,x,y,z,r,stack=1):
 
     ic.super_serial_send(ser_ee,"G",49)
 
-    demand_Pose = dict(smooth_rotate(c,0,R=20))
+    demand_Pose = dict(smooth_rotate(c,r,R=20))
     #print "demand_Pose: ",demand_Pose
     #ipt = raw_input("continue?")
     msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)
@@ -102,33 +130,45 @@ def grid_pos(c,x,y,z,r):
                  "z": ((nx-x)*y1_Pose['z'] + x*y2_Pose['z'])/nx, 
                  "rx": wp.grid_0_1['rx'], "ry": wp.grid_0_1['ry'], "rz": wp.grid_0_1['rz']}
 
-    print 'pose: ',grid_Pose
+    #print 'pose: ',grid_Pose
 
     ic.socket_send(c,sCMD=300)
 
     calculated_Joints = ic.get_ur_position(c,10,gPose=dict(grid_Pose))
     grid_Joints = {"x": calculated_Joints[0], "y": calculated_Joints[1], "z": calculated_Joints[2], "rx": calculated_Joints[3], "ry": calculated_Joints[4], "rz": calculated_Joints[5]+r}
+    if calculated_Joints[5] > 270:
+        grid_Joints["rz"] = calculated_Joints[5]+r-360
 
     return grid_Joints
 
 def smooth_rotate(c,r,R=20):
-    current_Pose = ic.get_ur_position(c,1)
-    T1 = math.pi*math.sqrt(current_Pose[3]*current_Pose[3]+current_Pose[4]*current_Pose[4]+current_Pose[5]*current_Pose[5])/180
-    R1 = np.array([current_Pose[3]*math.pi/(180*T1),
-                   current_Pose[4]*math.pi/(180*T1),
-                   current_Pose[5]*math.pi/(180*T1)])
+    #current_Pose = ic.get_ur_position(c,1)
+    #T1 = math.pi*math.sqrt(current_Pose[3]*current_Pose[3]+current_Pose[4]*current_Pose[4]+current_Pose[5]*current_Pose[5])/180
+    #R1 = np.array([current_Pose[3]*math.pi/(180*T1),
+    #               current_Pose[4]*math.pi/(180*T1),
+    #               current_Pose[5]*math.pi/(180*T1)])
 
-    if r == 0:
-        T2 = math.pi*R/180
-        dx = (wp.grid_30_13['x']-wp.grid_30_1['x'])*math.pi/180
-        dy = (wp.grid_30_13['y']-wp.grid_30_1['y'])*math.pi/180
-        dz = (wp.grid_30_13['z']-wp.grid_30_1['z'])*math.pi/180
-        norm = math.sqrt(dx*dx+dy*dy+dz*dz)
-        R2 = np.array([dx/norm,
-                       dy/norm,
-                       dz/norm])
 
-    T3 = 2*math.acos(math.cos(T1/2)*math.cos(T2/2)-math.sin(T1/2)*math.sin(T2/2)*np.dot(R1,R2))
-    R3 = (math.sin(T2/2)*math.cos(T1/2)*R2+math.cos(T2/2)*math.sin(T1/2)*R1+math.sin(T2/2)*math.sin(T1/2)*np.cross(R2,R2))/math.sin(T3/2)
+    #if r == 0:
+    #    T2 = math.pi*R/180
+    #    dx = (wp.grid_30_13['x']-wp.grid_30_1['x'])*math.pi/180
+    #    dy = (wp.grid_30_13['y']-wp.grid_30_1['y'])*math.pi/180
+    #    dz = (wp.grid_30_13['z']-wp.grid_30_1['z'])*math.pi/180
+    #    norm = math.sqrt(dx*dx+dy*dy+dz*dz)
+    #    R2 = np.array([dx/norm,
+    #                   dy/norm,
+    #                   dz/norm])
+
+    #T3 = 2*math.acos(math.cos(T1/2)*math.cos(T2/2)-math.sin(T1/2)*math.sin(T2/2)*np.dot(R1,R2))
+    #R3 = (math.sin(T2/2)*math.cos(T1/2)*R2+math.cos(T2/2)*math.sin(T1/2)*R1+math.sin(T2/2)*math.sin(T1/2)*np.cross(R2,R2))/math.sin(T3/2)
+    #return {"x": current_Pose[0], "y": current_Pose[1], "z": current_Pose[2], "rx": T3*R3[0]*180/math.pi, "ry": T3*R3[1]*180/math.pi, "rz": T3*R3[2]*180/math.pi}
+
+    R2 = [0,-1,0]
+    T2 = R
+
+    trans = {'x':0,'y':0,'z':0,'rx':T2*R2[0],'ry':T2*R2[1],'rz':T2*R2[2]}
+    trans_pose = ic.get_ur_position(c,11,trans)
+    #print "demand_Pose: ",trans_pose
+    #ipt = raw_input("continue?")
         
-    return {"x": current_Pose[0], "y": current_Pose[1], "z": current_Pose[2], "rx": T3*R3[0]*180/math.pi, "ry": T3*R3[1]*180/math.pi, "rz": T3*R3[2]*180/math.pi}
+    return {"x": trans_pose[0], "y": trans_pose[1], "z": trans_pose[2], "rx": trans_pose[3], "ry": trans_pose[4], "rz": trans_pose[5]}
