@@ -9,6 +9,10 @@ import math
 import numpy as np
 
 # Values for binary representation of space around a brick in the model
+#       0  1  2  3
+#   11  b  b  b  b  4
+#   10  b  b  b  b  4
+#       9  8  7  6
 bit0 = 1
 bit1 = 2
 bit2 = 4
@@ -66,71 +70,10 @@ def decode_file(model):
             for x in range(0,32):
                 if model[z][y][x]!=0:                           # find brick by comparing corners
                     if model[z][y+3][x+1] == model[z][y][x]:    # vertical brick, 'r' = 0 and default picking location in centre of brick
-                        bricks.append({'x':x,'y':y,'z':z,'r':0,'px':x,'py':y+1})
+                        bricks.append({'x':x,'y':y,'z':z,'r':0,'p':1,'xe':0,'ye':0})
                     if model[z][y+1][x+3] == model[z][y][x]:    # horizontal brick, 'r' = 90 and default picking location in centre of brick
-                        bricks.append({'x':x,'y':y,'z':z,'r':90,'px':x+1,'py':y})
+                        bricks.append({'x':x,'y':y,'z':z,'r':90,'p':1,'xe':0,'ye':0})
     return bricks
-
-# master function for sorting brick list into an assemble que
-# -identify separate layers
-# -sort layers into sub-groups (placeable and non-placeable)
-# -after removing placeable, sort non-placeable into sub-groups (placeable and non-placeable)
-# -repeat until all placeable
-# -optimise sub-groups for reliability
-def sort_bricks_as(bricks):
-    build_que = copy.deepcopy(bricks)
-    return build_que
-
-
-# master function for sorting brick list into a disassemble que, quick sort(not always optimal)
-# -identify separate layers
-# -sort layers into sub-groups (pickable and non-pickable)
-# -after removing pickable, sort non-pickable into sub-groups (pickable and non-pickable)
-# -repeat until all pickable
-# -optimise sub-groups for reliability
-def sort_bricks_dis(bricks,model):
-    build_que = copy.deepcopy(bricks)                           # copy structure
-    layers = [0]
-    for i in range(0,len(bricks)-1):                            # parse list for all bricks in same layers, store start positon of each layer in list
-        if bricks[i]['z'] != bricks[i+1]['z']:
-            layers.append(i+1)
-    layers.append(len(bricks))                                  # add final position for end of last layer
-
-    sub_groups = [[0]]
-    for i in range(0,len(layers)-1):                            # sort each layer into sub-groups, label end of each sub-group
-        print "layer ", i,": "
-        sub_group,build_que[layers[i]:layers[i+1]] = copy.deepcopy(sort_pickable(bricks[layers[i]:layers[i+1]],model))
-        for j in range(0,len(sub_group)):
-            sub_groups[i].append(sub_group[j])
-
-    for i in range(0,len(layers)-1):                            # optimise picking order of each sub-group
-        for j in range(0,len(sub_groups[i]):
-            build_que[layers[i]+sub_groups[j]:layers[i]+sub_groups[j+1]] = optimise_picking(build_que[layers[i]+sub_groups[j]:layers[i]+sub_groups[j+1]])
-    return build_que
-
-# re-orders a brick list into a valid picking order, label end of each sub-group
-def sort_pickable(sub_bricks,model):
-    sub_que = copy.deepcopy(sub_bricks)
-    sub_groups = [[]]
-    pick = 0
-    npick = len(sub_bricks)-1
-    for i in range(0,len(sub_bricks)):                          # sort bricks into pickable and non-pickable, boundary given by result of 'pick'
-        constraints = brick_constraints(sub_bricks[i],model)
-        if constraints: #meet requirements:
-            sub_que[pick] = copy.deepcopy(sub_bricks[i])
-            pick += 1
-        else:
-            sub_que[npick] = copy.deepcopy(sub_bricks[i])
-            npick -= 1
-    if pick != 0:                                               # if no pickable bricks, can't disassemble so return error
-        sub_groups.append(pick)
-    else:
-        return 'no picks'
-    if npick != len(sub_bricks)-1:                              # if any unpickable bricks, remove pickable from the model, re-sort list of non-pickable 
-        updated_model = update_model(sub_que[0:pick],model)
-        sub_sub_groups, sub_que[npick:len(sub_bricks)-1] = sort_pickable(sub_que[npick:len(sub_bricks)-1],updated_model)
-        sub_groups.append(sub_sub_groups)
-    return sub_groups, sub_que
 
 # optimises picking order of list, assumes any order is valid
 def optimise_picking(sub_bricks):
@@ -141,7 +84,7 @@ def optimise_picking(sub_bricks):
 # compute binary value of the surrounding bits of a brick
 def brick_constraints(brick,model):
     constraints = 0
-    if brick['r'] = 0 or brick['r'] = 180:
+    if brick['r'] == 0 or brick['r'] == 180:
         if brick['x'] < 30:
             if model[brick['z']][brick['y']][brick['x']+2] != 0:
                 constraints += bit0
@@ -170,7 +113,7 @@ def brick_constraints(brick,model):
                 constraints += bit10
             if model[brick['z']][brick['y']-1][brick['x']+1] != 0:
                 constraints += bit11
-    elif brick['r'] = 90 or brick['r'] = 270:
+    elif brick['r'] == 90 or brick['r'] == 270:
         if brick['y'] > 0:
             if model[brick['z']][brick['y']-1][brick['x']] != 0:
                 constraints += bit0
@@ -202,21 +145,21 @@ def brick_constraints(brick,model):
     return constraints
 
 # remove pickable bricks from a model to sort remaining bricks
-def update_model(pickable,model):
-    updated_model = copy.deepcopy(model)
+def update_model(pickable,updated_model):
+    #updated_model = copy.deepcopy(model)
     for i in range(0,len(pickable)):
-        updated_model[pickable['z']][picakble['y']][pickable['x']] = 0
-        updated_model[pickable['z']][picakble['y']+1][pickable['x']] = 0
-        updated_model[pickable['z']][picakble['y']][pickable['x']+1] = 0
-        updated_model[pickable['z']][picakble['y']+1][pickable['x']+1] = 0
-        if pickable['r'] = 0 or pickable['r'] = 180:
-            updated_model[pickable['z']][picakble['y']+2][pickable['x']] = 0
-            updated_model[pickable['z']][picakble['y']+3][pickable['x']] = 0
-            updated_model[pickable['z']][picakble['y']+2][pickable['x']+1] = 0
-            updated_model[pickable['z']][picakble['y']+3][pickable['x']+1] = 0
-        if pickable['r'] = 90 or pickable['r'] = 270:
-            updated_model[pickable['z']][picakble['y']][pickable['x']+2] = 0
-            updated_model[pickable['z']][picakble['y']+1][pickable['x']+2] = 0
-            updated_model[pickable['z']][picakble['y']][pickable['x']+3] = 0
-            updated_model[pickable['z']][picakble['y']+1][pickable['x']+3] = 0
+        updated_model[pickable[i]['z']][pickable[i]['y']][pickable[i]['x']] = 0
+        updated_model[pickable[i]['z']][pickable[i]['y']+1][pickable[i]['x']] = 0
+        updated_model[pickable[i]['z']][pickable[i]['y']][pickable[i]['x']+1] = 0
+        updated_model[pickable[i]['z']][pickable[i]['y']+1][pickable[i]['x']+1] = 0
+        if pickable[i]['r'] == 0 or pickable[i]['r'] == 180:
+            updated_model[pickable[i]['z']][pickable[i]['y']+2][pickable[i]['x']] = 0
+            updated_model[pickable[i]['z']][pickable[i]['y']+3][pickable[i]['x']] = 0
+            updated_model[pickable[i]['z']][pickable[i]['y']+2][pickable[i]['x']+1] = 0
+            updated_model[pickable[i]['z']][pickable[i]['y']+3][pickable[i]['x']+1] = 0
+        if pickable[i]['r'] == 90 or pickable[i]['r'] == 270:
+            updated_model[pickable[i]['z']][pickable[i]['y']][pickable[i]['x']+2] = 0
+            updated_model[pickable[i]['z']][pickable[i]['y']+1][pickable[i]['x']+2] = 0
+            updated_model[pickable[i]['z']][pickable[i]['y']][pickable[i]['x']+3] = 0
+            updated_model[pickable[i]['z']][pickable[i]['y']+1][pickable[i]['x']+3] = 0
     return updated_model

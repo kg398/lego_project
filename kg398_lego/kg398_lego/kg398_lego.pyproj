@@ -12,6 +12,8 @@
     <Name>kg398_lego</Name>
     <RootNamespace>kg398_lego</RootNamespace>
     <InterpreterId>Global|PythonCore|2.7</InterpreterId>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,9 +24,18 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="assembly.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="disassembly.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="file_decoder.py" />
     <Compile Include="kg398_lego.py" />
     <Compile Include="lego_moves.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="reassembly.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ur_interface_cmds.py" />
