@@ -35,6 +35,9 @@
     <Compile Include="lego_moves.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="new_assembly.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="reassembly.py">
       <SubType>Code</SubType>
     </Compile>

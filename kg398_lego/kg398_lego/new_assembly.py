@@ -79,28 +79,6 @@ def sort_bricks_ass(bricks,model):
 
     return build_que
 
-# master function for brute force sort
-# -identify separate layers
-# -brute force each layer
-# -update picking method
-def bf_sort_bricks_ass(bricks,model):
-    build_que = list(bricks)
-
-    # separate layers
-    layers = [0]
-    for i in range(0,len(bricks)-1):
-        if bricks[i]['z'] != bricks[i+1]['z']:
-            layers.append(i+1)
-    layers.append(len(bricks))
-
-    # optimise picking order of each layer
-    for i in range(0,len(layers)-1):
-        build_que[layers[i]:layers[i+1]] = list(brute_force_ass(build_que[layers[i]:layers[i+1]],model))
-
-    # update picking method
-    build_que = list(list_placing(build_que,model))
-
-    return build_que
 
 def sort_layer_ass(sub_bricks,model):
     placeable = 0
@@ -133,43 +111,7 @@ def sort_layer_ass(sub_bricks,model):
 
     return groups,build_que
 
-# re-orders a brick list into a valid picking order, label end of each sub-group
-def sort_placeable_ass(sub_bricks,model):
-    sub_que = copy.deepcopy(sub_bricks)
-    place = len(sub_bricks)-1
-    nplace = 0
-    placeable = 0
-    for i in range(0,len(sub_bricks)):                          # sort bricks into pickable and non-pickable, boundary given by result of 'pick'
-        constraints = fd.brick_constraints(sub_bricks[i],model)
-        #for j in range(0,len(pick_masks)):
-        if constraints&place_masks[1] == 0:                      # if constraints allow a certain pick...
-            sub_que[place] = copy.deepcopy(sub_bricks[i])
-            place -= 1
-        elif constraints&place_masks[0] == 0:
-            sub_que[place] = copy.deepcopy(sub_bricks[i])
-            sub_que[place]['p'] = 0
-            place -= 1
-        elif constraints&place_masks[2] == 0:
-            sub_que[place] = copy.deepcopy(sub_bricks[i])
-            sub_que[place]['p'] = 2
-            place -= 1
 
-        else:                                                   # if not pickable...
-            sub_que[nplace] = copy.deepcopy(sub_bricks[i])
-            nplace += 1
-    if place != len(sub_bricks)-1:                                               # if no pickable bricks, can't disassemble so return error
-        sub_groups = place+1
-    else:
-        return 'no picks'
-    if nplace == 0:                              # if any unpickable bricks, remove pickable from the model, re-sort list of non-pickable 
-        placeable = 1
-    #print 'pickable: '
-    #for i in range(0,sub_groups):
-    #            print sub_que[i]['x']+sub_que[i]['px'],', ',sub_que[i]['y']+sub_que[i]['py']
-    #print 'not pickable: '
-    #for i in range(sub_groups,len(sub_que)):
-    #            print sub_que[i]['x']+sub_que[i]['px'],', ',sub_que[i]['y']+sub_que[i]['py']
-    return sub_groups, sub_que, placeable
 
 # Computes optimal place order of list by evaluating the cost associated with each possible order
 def brute_force_ass(bricks,model):
@@ -177,11 +119,9 @@ def brute_force_ass(bricks,model):
     print "number of permutations: ",cases
     queue = list(bricks)
     min_cost = list_cost(bricks,model)
-    order = range(0,len(bricks))
     for i in range(1,cases):
         #tic = time.time()
-        order = generate_order(order,i)
-        b_list = generate_list(bricks,order)
+        b_list = generate_list(bricks,i)
         #toc = time.time()-tic
         #tic2 = time.time()
         cost = list_cost(b_list,model)
@@ -194,59 +134,46 @@ def brute_force_ass(bricks,model):
     print "min_cost = ", min_cost
     return queue
 
-# Computes optimal place order of list by evaluating the cost associated with each possible order
-def rnd_force_ass(bricks,model):
-    permutations = math.factorial(len(bricks))
-    if len(bricks) < 6:
-        cases = permutations
-    else:
-        cases = 200
-    print "number of permutations: ",cases
-    queue = list(bricks)
-    min_cost = list_cost(bricks,model)
-    order = range(0,len(bricks))
-    for i in range(1,cases):
-        #tic = time.time()
-        order = generate_order(order,i)
-        #toc = time.time()
-        b_list = generate_list(bricks,order)
-        #toc2 = time.time()
-        #tic2 = time.time()
-        cost = list_cost(b_list,model)
-        #toc2 = time.time()-tic2
-        if cost < min_cost:
-            queue = list(b_list)
-            min_cost = cost
-        #print cost
-        #print "time = ", toc-tic, toc2-toc
-    print "min_cost = ", min_cost
-    return queue
 
-# generate list order randomly if large, or specific permutation if small
-def generate_order(order,i):
-    if len(order) < 6:
-        #tic = time.time()
-        order = list(itertools.permutations(range(0,len(order))))[i]
-        #toc = time.time()
-        #print "rnd time = ", toc-tic
-    else:
-        #tic = time.time()
-        random.shuffle(order)
-        #toc = time.time()
-        #print "perm time = ", toc-tic
-    return order
+
 
 # re-order the list based on order
-def generate_list(bricks,order):
+def generate_list(bricks,i):
     #tic = time.time()
     b_list = list(bricks)
     #toc = time.time()-tic
+    order = list(itertools.permutations(range(0,len(bricks))))[i]
     #tic3 = time.time()
     for j in range(0,len(bricks)):
         b_list[j] = dict(bricks[order[j]])
     #toc3 = time.time()-tic3
     #print toc, toc3
     return b_list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # generate the cost of a list of bricks
 def list_cost(bricks,model):
@@ -472,3 +399,4 @@ def update_placing(brick,constraints):
 
 
     return brick
+

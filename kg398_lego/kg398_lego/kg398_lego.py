@@ -205,13 +205,16 @@ def main():
             bricks = fd.decode_file(model)
             tic = time.time()
             que = ass.sort_bricks_ass(bricks,copy.deepcopy(model))
-            print "time = ", time.time()-tic
+            print "sort time = ", time.time()-tic
             print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
-            for i in range(0,len(que)):
-                if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['ye'],', ',que[i]['xe']
-                else:
-                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
+            print ""
+            #for i in range(0,len(que)):
+            #    if que[i]['r'] == 0 or que[i]['r'] == 180:
+            #        print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['ye'],', ',que[i]['xe']
+            #    else:
+            #        print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
+
+
             #for i in range(0,len(que)):
             #    if que[i]['r'] == 0 or que[i]['r'] == 180:
             #        print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['ye'],', ',que[i]['xe']
@@ -224,13 +227,13 @@ def main():
             bricks = fd.decode_file(model)
             tic = time.time()
             que = ass.bf_sort_bricks_ass(bricks,copy.deepcopy(model))
-            print "time = ", time.time()-tic
-            print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
-            for i in range(0,len(que)):
-                if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['ye'],', ',que[i]['xe']
-                else:
-                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
+            print "bf time = ", time.time()-tic
+            #print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
+            #for i in range(0,len(que)):
+            #    if que[i]['r'] == 0 or que[i]['r'] == 180:
+            #        print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['ye'],', ',que[i]['xe']
+            #    else:
+            #        print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
             #ipt = raw_input("continue?")
             #lm.assemble(c,ser_ee,que)
         if task == "re":
@@ -257,5 +260,43 @@ def main():
                     print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z']
             ipt = raw_input("continue?")
             lm.assemble(c,ser_ee,que)
+        if task == "rnd":
+            model = fd.import_file("example.txt")
+            bricks = fd.decode_file(model)
+            tic = time.time()
+            que = ass.sort_bricks_ass(bricks,copy.deepcopy(model))
+            print "sort time = ", time.time()-tic
+            print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
+            print ""
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y']+que[i]['p']
+                else:
+                    print que[i]['x']+que[i]['p'],', ',que[i]['y']
+            model = fd.import_file("example.txt")
+            bricks = fd.decode_file(model)
+            tic = time.time()
+            que = ass.sort_bricks_ass(bricks,copy.deepcopy(model))
+            print "sort time = ", time.time()-tic
+            print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
+            print ""
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y']+que[i]['p']
+                else:
+                    print que[i]['x']+que[i]['p'],', ',que[i]['y']
+            model = fd.import_file("example.txt")
+            bricks = fd.decode_file(model)
+            tic = time.time()
+            que = ass.sort_bricks_ass(bricks,copy.deepcopy(model))
+            print "sort time = ", time.time()-tic
+            print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
+            print ""
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y']+que[i]['p']
+                else:
+                    print que[i]['x']+que[i]['p'],', ',que[i]['y']
+            print "bricks: ", len(que)
 
 if __name__ == '__main__': main()

@@ -69,10 +69,12 @@ def decode_file(model):
         for y in range(0,16):
             for x in range(0,32):
                 if model[z][y][x]!=0:                           # find brick by comparing corners
-                    if model[z][y+3][x+1] == model[z][y][x]:    # vertical brick, 'r' = 0 and default picking location in centre of brick
-                        bricks.append({'x':x,'y':y,'z':z,'r':0,'p':1,'xe':0,'ye':0})
-                    if model[z][y+1][x+3] == model[z][y][x]:    # horizontal brick, 'r' = 90 and default picking location in centre of brick
-                        bricks.append({'x':x,'y':y,'z':z,'r':90,'p':1,'xe':0,'ye':0})
+                    if x < 31 and y < 13:
+                        if model[z][y+3][x+1] == model[z][y][x]:    # vertical brick, 'r' = 0 and default picking location in centre of brick
+                            bricks.append({'x':x,'y':y,'z':z,'r':0,'p':1,'xe':0,'ye':0})
+                    if x < 29 and y < 15:
+                        if model[z][y+1][x+3] == model[z][y][x]:    # horizontal brick, 'r' = 90 and default picking location in centre of brick
+                            bricks.append({'x':x,'y':y,'z':z,'r':90,'p':1,'xe':0,'ye':0})
     return bricks
 
 # optimises picking order of list, assumes any order is valid
