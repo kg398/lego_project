@@ -31,11 +31,11 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="file_decoder.py" />
-    <Compile Include="kg398_lego.py" />
-    <Compile Include="lego_moves.py">
+    <Compile Include="flex_reassembly.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="new_assembly.py">
+    <Compile Include="kg398_lego.py" />
+    <Compile Include="lego_moves.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="reassembly.py">

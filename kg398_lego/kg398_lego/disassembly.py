@@ -16,7 +16,9 @@ import file_decoder as fd
 #   10  b  b  b  b  4
 #       9  8  7  6
 
-pick_masks = [207,399,783,963,966,972]
+# mask free neighbouring spaces, separated by brick type
+pick_masks = [[207,399,783,963,966,972],
+              [51,204]]
 
 # master function for sorting brick list into a disassemble que, quick sort(not always optimal)
 # -identify separate layers
@@ -37,6 +39,8 @@ def sort_bricks_dis(bricks,model):
         sub_groups.append([0])
         #print "layer ", i,": "
         sub_group,build_que[layers[i]:layers[i+1]] = copy.deepcopy(sort_layer_dis(bricks[layers[i]:layers[i+1]],model))
+        if sub_group == 'n':
+            return build_que[layers[i]:layers[i+1]],'n'
         for j in range(0,len(sub_group)):
             sub_groups.append(sub_group)
 
@@ -48,7 +52,7 @@ def sort_bricks_dis(bricks,model):
     #for i in range(0,len(layers)-1):                            # optimise picking order of each sub-group
     #    for j in range(0,len(sub_groups[i])-1):
     #        build_que[layers[i]+sub_groups[i][j]:layers[i]+sub_groups[i][j+1]] = optimise_picking(build_que[layers[i]+sub_groups[i][j]:layers[i]+sub_groups[i][j+1]])
-    return new_que
+    return new_que,'y'
 
 def sort_layer_dis(sub_bricks,model):
     pickable = 0
@@ -62,6 +66,8 @@ def sort_layer_dis(sub_bricks,model):
 
     while pickable == 0:
         group, build_que[groups[-1]:len(sub_bricks)], pickable = sort_pickable_dis(build_que[groups[-1]:len(sub_bricks)],updated_model)
+        if group == 0:
+            return 'n',build_que[groups[-1]:len(sub_bricks)]
         groups.append(groups[-1]+group)
         updated_model = fd.update_model(build_que[groups[-2]:groups[-1]],updated_model)
 
@@ -83,48 +89,65 @@ def sort_pickable_dis(sub_bricks,model):
     for i in range(0,len(sub_bricks)):                          # sort bricks into pickable and non-pickable, boundary given by result of 'pick'
         constraints = fd.brick_constraints(sub_bricks[i],model)
         #for j in range(0,len(pick_masks)):
-        if constraints&pick_masks[1] == 0:                      # if constraints allow a certain pick...
-            sub_que[pick] = copy.deepcopy(sub_bricks[i])
-            if sub_que[pick]['r'] == 0:
-                sub_que[pick]['r'] = sub_que[pick]['r'] + 180
-            pick += 1
-        elif constraints&pick_masks[4] == 0:
-            sub_que[pick] = copy.deepcopy(sub_bricks[i])
-            if sub_que[pick]['r'] == 90:
-                sub_que[pick]['r'] = sub_que[pick]['r'] + 180
-            pick += 1
-        elif constraints&pick_masks[0] == 0:
-            sub_que[pick] = copy.deepcopy(sub_bricks[i])
-            if sub_que[pick]['r'] == 0:
-                sub_que[pick]['r'] = sub_que[pick]['r'] + 180
-            sub_que[pick]['p'] = 2
-            pick += 1
-        elif constraints&pick_masks[2] == 0:
-            sub_que[pick] = copy.deepcopy(sub_bricks[i])
-            if sub_que[pick]['r'] == 0:
-                sub_que[pick]['r'] = sub_que[pick]['r'] + 180
-            sub_que[pick]['p'] = 0
-            pick += 1
-        elif constraints&pick_masks[3] == 0:
-            sub_que[pick] = copy.deepcopy(sub_bricks[i])
-            if sub_que[pick]['r'] == 90:
-                sub_que[pick]['r'] = sub_que[pick]['r'] + 180
-            sub_que[pick]['p'] = 0
-            pick += 1
-        elif constraints&pick_masks[5] == 0:
-            sub_que[pick] = copy.deepcopy(sub_bricks[i])
-            if sub_que[pick]['r'] == 90:
-                sub_que[pick]['r'] = sub_que[pick]['r'] + 180
-            sub_que[pick]['p'] = 2
-            pick += 1
+        if sub_bricks[i]['b']==0:
+            if constraints&pick_masks[0][1] == 0:                      # if constraints allow a certain pick...
+                sub_que[pick] = copy.deepcopy(sub_bricks[i])
+                if sub_que[pick]['r'] == 0:
+                    sub_que[pick]['r'] = sub_que[pick]['r'] + 180
+                pick += 1
+            elif constraints&pick_masks[0][4] == 0:
+                sub_que[pick] = copy.deepcopy(sub_bricks[i])
+                if sub_que[pick]['r'] == 90:
+                    sub_que[pick]['r'] = sub_que[pick]['r'] + 180
+                pick += 1
+            elif constraints&pick_masks[0][0] == 0:
+                sub_que[pick] = copy.deepcopy(sub_bricks[i])
+                if sub_que[pick]['r'] == 0:
+                    sub_que[pick]['r'] = sub_que[pick]['r'] + 180
+                sub_que[pick]['p'] = 2
+                pick += 1
+            elif constraints&pick_masks[0][2] == 0:
+                sub_que[pick] = copy.deepcopy(sub_bricks[i])
+                if sub_que[pick]['r'] == 0:
+                    sub_que[pick]['r'] = sub_que[pick]['r'] + 180
+                sub_que[pick]['p'] = 0
+                pick += 1
+            elif constraints&pick_masks[0][3] == 0:
+                sub_que[pick] = copy.deepcopy(sub_bricks[i])
+                if sub_que[pick]['r'] == 90:
+                    sub_que[pick]['r'] = sub_que[pick]['r'] + 180
+                sub_que[pick]['p'] = 0
+                pick += 1
+            elif constraints&pick_masks[0][5] == 0:
+                sub_que[pick] = copy.deepcopy(sub_bricks[i])
+                if sub_que[pick]['r'] == 90:
+                    sub_que[pick]['r'] = sub_que[pick]['r'] + 180
+                sub_que[pick]['p'] = 2
+                pick += 1
 
-        else:                                                   # if not pickable...
-            sub_que[npick] = copy.deepcopy(sub_bricks[i])
-            npick -= 1
-    if pick != 0:                                               # if no pickable bricks, can't disassemble so return error
-        sub_groups = pick
-    else:
-        return 'no picks'
+            else:                                                   # if not pickable...
+                sub_que[npick] = copy.deepcopy(sub_bricks[i])
+                npick -= 1
+
+        elif sub_bricks[i]['b']==1:
+            if constraints&pick_masks[1][0] == 0:                      # if constraints allow a certain pick...
+                sub_que[pick] = copy.deepcopy(sub_bricks[i])
+                sub_que[pick]['r'] = 90
+                sub_que[pick]['p'] = 0
+                pick += 1
+            elif constraints&pick_masks[1][1] == 0:
+                sub_que[pick] = copy.deepcopy(sub_bricks[i])
+                sub_que[pick]['r'] = 0
+                sub_que[pick]['p'] = 0
+                pick += 1
+
+            else:                                                   # if not pickable...
+                sub_que[npick] = copy.deepcopy(sub_bricks[i])
+                npick -= 1
+    #if pick != 0:                                               # if no pickable bricks, can't disassemble so return error
+    sub_groups = pick
+    #else:
+    #    return 'no picks'
     if npick == len(sub_bricks)-1:                              # if any unpickable bricks, remove pickable from the model, re-sort list of non-pickable 
         pickable = 1
     #print 'pickable: '

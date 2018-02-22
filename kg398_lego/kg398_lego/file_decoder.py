@@ -61,7 +61,7 @@ def import_file(name):
     return model
 
 # Reads model array and decodes into a list of bricks
-# Brick info stored as a dictionary: {'x','y','z','r','px','py'}, locatiion in space (x,y,z,r), picking coords (px,py,z,r)
+# Brick info stored as a dictionary: {'x','y','z','r','p','xe','ye','b'}, locatiion in space (x,y,z,r), relative picking coord (p), relative placing offsets (xe,ye), brick type (b)
 # Returns list of bricks
 def decode_file(model):
     bricks = []
@@ -71,10 +71,10 @@ def decode_file(model):
                 if model[z][y][x]!=0:                           # find brick by comparing corners
                     if x < 31 and y < 13:
                         if model[z][y+3][x+1] == model[z][y][x]:    # vertical brick, 'r' = 0 and default picking location in centre of brick
-                            bricks.append({'x':x,'y':y,'z':z,'r':0,'p':1,'xe':0,'ye':0})
+                            bricks.append({'x':x,'y':y,'z':z,'r':0,'p':1,'xe':0,'ye':0,'b':0})
                     if x < 29 and y < 15:
                         if model[z][y+1][x+3] == model[z][y][x]:    # horizontal brick, 'r' = 90 and default picking location in centre of brick
-                            bricks.append({'x':x,'y':y,'z':z,'r':90,'p':1,'xe':0,'ye':0})
+                            bricks.append({'x':x,'y':y,'z':z,'r':90,'p':1,'xe':0,'ye':0,'b':0})
     return bricks
 
 # optimises picking order of list, assumes any order is valid
@@ -86,64 +86,86 @@ def optimise_picking(sub_bricks):
 # compute binary value of the surrounding bits of a brick
 def brick_constraints(brick,model):
     constraints = 0
-    if brick['r'] == 0 or brick['r'] == 180:
+    if brick['b'] == 0:
+        if brick['r'] == 0 or brick['r'] == 180:
+            if brick['x'] < 30:
+                if model[brick['z']][brick['y']][brick['x']+2] != 0:
+                    constraints += bit0
+                if model[brick['z']][brick['y']+1][brick['x']+2] != 0:
+                    constraints += bit1
+                if model[brick['z']][brick['y']+2][brick['x']+2] != 0:
+                    constraints += bit2
+                if model[brick['z']][brick['y']+3][brick['x']+2] != 0:
+                    constraints += bit3
+            if brick['y'] < 12:
+                if model[brick['z']][brick['y']+4][brick['x']+1] != 0:
+                    constraints += bit4
+                if model[brick['z']][brick['y']+4][brick['x']] != 0:
+                    constraints += bit5
+            if brick['x'] > 0:
+                if model[brick['z']][brick['y']+3][brick['x']-1] != 0:
+                    constraints += bit6
+                if model[brick['z']][brick['y']+2][brick['x']-1] != 0:
+                    constraints += bit7
+                if model[brick['z']][brick['y']+1][brick['x']-1] != 0:
+                    constraints += bit8
+                if model[brick['z']][brick['y']][brick['x']-1] != 0:
+                    constraints += bit9
+            if brick['y'] > 0:
+                if model[brick['z']][brick['y']-1][brick['x']] != 0:
+                    constraints += bit10
+                if model[brick['z']][brick['y']-1][brick['x']+1] != 0:
+                    constraints += bit11
+        elif brick['r'] == 90 or brick['r'] == 270:
+            if brick['y'] > 0:
+                if model[brick['z']][brick['y']-1][brick['x']] != 0:
+                    constraints += bit0
+                if model[brick['z']][brick['y']-1][brick['x']+1] != 0:
+                    constraints += bit1
+                if model[brick['z']][brick['y']-1][brick['x']+2] != 0:
+                    constraints += bit2
+                if model[brick['z']][brick['y']-1][brick['x']+3] != 0:
+                    constraints += bit3
+            if brick['x'] < 28:
+                if model[brick['z']][brick['y']][brick['x']+4] != 0:
+                    constraints += bit4
+                if model[brick['z']][brick['y']+1][brick['x']+4] != 0:
+                    constraints += bit5
+            if brick['y'] < 14:
+                if model[brick['z']][brick['y']+2][brick['x']+3] != 0:
+                    constraints += bit6
+                if model[brick['z']][brick['y']+2][brick['x']+2] != 0:
+                    constraints += bit7
+                if model[brick['z']][brick['y']+2][brick['x']+1] != 0:
+                    constraints += bit8
+                if model[brick['z']][brick['y']+2][brick['x']] != 0:
+                    constraints += bit9
+            if brick['x'] > 0:
+                if model[brick['z']][brick['y']+1][brick['x']-1] != 0:
+                    constraints += bit10
+                if model[brick['z']][brick['y']][brick['x']-1] != 0:
+                    constraints += bit11
+    if brick['b'] == 1:
+        if brick['y'] > 0:
+            if model[brick['z']][brick['y']-1][brick['x']] != 0:
+                constraints += bit0
+            if model[brick['z']][brick['y']-1][brick['x']+1] != 0:
+                constraints += bit1
         if brick['x'] < 30:
             if model[brick['z']][brick['y']][brick['x']+2] != 0:
-                constraints += bit0
+                constraints += bit2
             if model[brick['z']][brick['y']+1][brick['x']+2] != 0:
-                constraints += bit1
-            if model[brick['z']][brick['y']+2][brick['x']+2] != 0:
-                constraints += bit2
-            if model[brick['z']][brick['y']+3][brick['x']+2] != 0:
                 constraints += bit3
-        if brick['y'] < 12:
-            if model[brick['z']][brick['y']+4][brick['x']+1] != 0:
-                constraints += bit4
-            if model[brick['z']][brick['y']+4][brick['x']] != 0:
-                constraints += bit5
-        if brick['x'] > 0:
-            if model[brick['z']][brick['y']+3][brick['x']-1] != 0:
-                constraints += bit6
-            if model[brick['z']][brick['y']+2][brick['x']-1] != 0:
-                constraints += bit7
-            if model[brick['z']][brick['y']+1][brick['x']-1] != 0:
-                constraints += bit8
-            if model[brick['z']][brick['y']][brick['x']-1] != 0:
-                constraints += bit9
-        if brick['y'] > 0:
-            if model[brick['z']][brick['y']-1][brick['x']] != 0:
-                constraints += bit10
-            if model[brick['z']][brick['y']-1][brick['x']+1] != 0:
-                constraints += bit11
-    elif brick['r'] == 90 or brick['r'] == 270:
-        if brick['y'] > 0:
-            if model[brick['z']][brick['y']-1][brick['x']] != 0:
-                constraints += bit0
-            if model[brick['z']][brick['y']-1][brick['x']+1] != 0:
-                constraints += bit1
-            if model[brick['z']][brick['y']-1][brick['x']+2] != 0:
-                constraints += bit2
-            if model[brick['z']][brick['y']-1][brick['x']+3] != 0:
-                constraints += bit3
-        if brick['x'] < 28:
-            if model[brick['z']][brick['y']][brick['x']+4] != 0:
-                constraints += bit4
-            if model[brick['z']][brick['y']+1][brick['x']+4] != 0:
-                constraints += bit5
         if brick['y'] < 14:
-            if model[brick['z']][brick['y']+2][brick['x']+3] != 0:
-                constraints += bit6
-            if model[brick['z']][brick['y']+2][brick['x']+2] != 0:
-                constraints += bit7
             if model[brick['z']][brick['y']+2][brick['x']+1] != 0:
-                constraints += bit8
+                constraints += bit4
             if model[brick['z']][brick['y']+2][brick['x']] != 0:
-                constraints += bit9
+                constraints += bit5
         if brick['x'] > 0:
             if model[brick['z']][brick['y']+1][brick['x']-1] != 0:
-                constraints += bit10
+                constraints += bit6
             if model[brick['z']][brick['y']][brick['x']-1] != 0:
-                constraints += bit11
+                constraints += bit7
     return constraints
 
 # remove pickable bricks from a model to sort remaining bricks
@@ -154,14 +176,19 @@ def update_model(pickable,updated_model):
         updated_model[pickable[i]['z']][pickable[i]['y']+1][pickable[i]['x']] = 0
         updated_model[pickable[i]['z']][pickable[i]['y']][pickable[i]['x']+1] = 0
         updated_model[pickable[i]['z']][pickable[i]['y']+1][pickable[i]['x']+1] = 0
-        if pickable[i]['r'] == 0 or pickable[i]['r'] == 180:
+        if pickable[i]['b']==0 and (pickable[i]['r'] == 0 or pickable[i]['r'] == 180):
             updated_model[pickable[i]['z']][pickable[i]['y']+2][pickable[i]['x']] = 0
             updated_model[pickable[i]['z']][pickable[i]['y']+3][pickable[i]['x']] = 0
             updated_model[pickable[i]['z']][pickable[i]['y']+2][pickable[i]['x']+1] = 0
             updated_model[pickable[i]['z']][pickable[i]['y']+3][pickable[i]['x']+1] = 0
-        if pickable[i]['r'] == 90 or pickable[i]['r'] == 270:
+        elif pickable[i]['b']==0 and (pickable[i]['r'] == 90 or pickable[i]['r'] == 270):
             updated_model[pickable[i]['z']][pickable[i]['y']][pickable[i]['x']+2] = 0
             updated_model[pickable[i]['z']][pickable[i]['y']+1][pickable[i]['x']+2] = 0
             updated_model[pickable[i]['z']][pickable[i]['y']][pickable[i]['x']+3] = 0
             updated_model[pickable[i]['z']][pickable[i]['y']+1][pickable[i]['x']+3] = 0
     return updated_model
+
+def match_bricks(brick1,brick2):
+    if brick1['x']==brick2['x'] and brick1['y']==brick2['y'] and brick1['z']==brick2['z'] and brick1['r']%180==brick2['r']%180:
+        return 1
+    return 0

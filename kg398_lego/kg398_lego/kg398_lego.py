@@ -16,6 +16,7 @@ import file_decoder as fd
 import assembly as ass
 import disassembly as dis
 import reassembly as rea
+import flex_reassembly as flx
 
 #import sys
 
@@ -145,7 +146,7 @@ def main():
                 msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
 
         if task == "wp":
-            msg = ic.safe_ur_move(c,Pose=dict(wp.feed_stow_joints),CMD=2)
+            msg = ic.safe_ur_move(c,Pose=dict(wp.feed_stow_wp_joints),CMD=2)
         if task == "pose":
             current_Pose = ic.get_ur_position(c,1)
             print "current pose: ", current_Pose
@@ -159,7 +160,24 @@ def main():
                 ic.super_serial_send(ser_ee,"G",51)
             model = fd.import_file("example.txt")
             bricks = fd.decode_file(model)
-            que = dis.sort_bricks_dis(bricks,model)
+            que,opt = dis.sort_bricks_dis(bricks,model)
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['p']
+                else:
+                    print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z'],', ',que[i]['p']
+            ipt = raw_input("continue?")
+            #lm.assemble(c,ser_ee,bricks)
+            #ipt = raw_input("continue?")
+            lm.disassemble(c,ser_ee,que)
+
+        if task == "disre":
+            ipt = raw_input("Open?(y/n)")
+            if ipt == "y":
+                ic.super_serial_send(ser_ee,"G",51)
+            model = fd.import_file("examplere.txt")
+            bricks = fd.decode_file(model)
+            que,opt = dis.sort_bricks_dis(bricks,model)
             for i in range(0,len(que)):
                 if que[i]['r'] == 0 or que[i]['r'] == 180:
                     print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['p']
@@ -176,7 +194,26 @@ def main():
                 ic.super_serial_send(ser_ee,"G",51)
             model = fd.import_file("example.txt")
             bricks = fd.decode_file(model)
-            que = ass.sort_bricks_ass(bricks,model)
+            que,opt = ass.sort_bricks_ass(bricks,model)
+            print opt
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z']
+                else:
+                    print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z']
+            ipt = raw_input("continue?")
+            #lm.assemble(c,ser_ee,bricks)
+            #ipt = raw_input("continue?")
+            lm.assemble(c,ser_ee,que)
+
+        if task == "assre":
+            ipt = raw_input("Open?(y/n)")
+            if ipt == "y":
+                ic.super_serial_send(ser_ee,"G",51)
+            model = fd.import_file("examplere.txt")
+            bricks = fd.decode_file(model)
+            que,opt = ass.sort_bricks_ass(bricks,model)
+            print opt
             for i in range(0,len(que)):
                 if que[i]['r'] == 0 or que[i]['r'] == 180:
                     print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z']
@@ -192,20 +229,24 @@ def main():
             #print get_size(model)
 
         if task == "stow":
+            h = int(raw_input("H: "))
             msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
-            lm.feed_place(c,ser_ee)
+            lm.feed_place(c,ser_ee,H=h)
             msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
         if task == "pick":
             msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
+            h = int(raw_input("H: "))
             x = int(raw_input("x: "))
-            lm.feed_pick(c,ser_ee,X=x)
+            lm.feed_pick(c,ser_ee,X=x,H=h)
             msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
+
         if task == "ls":
             model = fd.import_file("example.txt")
             bricks = fd.decode_file(model)
             tic = time.time()
-            que = ass.sort_bricks_ass(bricks,copy.deepcopy(model))
+            que,opt = ass.sort_bricks_ass(bricks,copy.deepcopy(model))
             print "sort time = ", time.time()-tic
+            print "Sort output: ", opt
             print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
             print ""
             #for i in range(0,len(que)):
@@ -215,88 +256,184 @@ def main():
             #        print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
 
 
-            #for i in range(0,len(que)):
-            #    if que[i]['r'] == 0 or que[i]['r'] == 180:
-            #        print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['ye'],', ',que[i]['xe']
-            #    else:
-            #        print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['ye'],', ',que[i]['xe']
+                else:
+                    print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
+
             #ipt = raw_input("continue?")
             #lm.assemble(c,ser_ee,que)
+
             ipt = raw_input("continue?")
             model = fd.import_file("example.txt")
             bricks = fd.decode_file(model)
             tic = time.time()
-            que = ass.bf_sort_bricks_ass(bricks,copy.deepcopy(model))
-            print "bf time = ", time.time()-tic
+            que,opt = dis.sort_bricks_dis(bricks,copy.deepcopy(model))
+            print "dis time = ", time.time()-tic
+            print "Sort output: ", opt
             #print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
-            #for i in range(0,len(que)):
-            #    if que[i]['r'] == 0 or que[i]['r'] == 180:
-            #        print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['ye'],', ',que[i]['xe']
-            #    else:
-            #        print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['ye'],', ',que[i]['xe']
+                else:
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
             #ipt = raw_input("continue?")
             #lm.assemble(c,ser_ee,que)
         if task == "re":
             model1 = fd.import_file("example.txt")
             bricks1 = fd.decode_file(model1)
-            model2 = fd.import_file("example2.txt")
+            model2 = fd.import_file("examplere.txt")
             bricks2 = fd.decode_file(model2)
-            dis_list, ass_list = rea.reassemble(bricks1,bricks2)
-            que = dis.sort_bricks_dis(dis_list,copy.deepcopy(model1))
-            print "remove: "
+            dis_list, ass_list = rea.reassemble(bricks1,bricks2,model1,model2)
+            #print "dis_list :",dis_list
+            #print "as_list :",ass_list
+            #ipt = raw_input("continue?")
+            que,opt = dis.sort_bricks_dis(dis_list,copy.deepcopy(model1))
+            print "disassembly sort output: ",opt
+            print "-------------- remove --------------"
+            print "x",","," y",","," p",",","  r",","," z"
             for i in range(0,len(que)):
                 if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z']
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z']
                 else:
-                    print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z']
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z']
             ipt = raw_input("continue?")
             lm.disassemble(c,ser_ee,que)
-            que = ass.sort_bricks_ass(ass_list,copy.deepcopy(model2))
-            print "build: "
+            print ""
+            print ""
+            que,opt = ass.sort_bricks_ass(ass_list,copy.deepcopy(model2))
+            print "assembly sort output: ",opt
+            print "-------------- build  --------------"
+            print "x",","," y",","," p",",","  r",","," z",","," ex",","," ey"
             for i in range(0,len(que)):
                 if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z']
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',-que[i]['ye'],', ',que[i]['xe']
                 else:
-                    print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z']
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
             ipt = raw_input("continue?")
             lm.assemble(c,ser_ee,que)
-        if task == "rnd":
-            model = fd.import_file("example.txt")
-            bricks = fd.decode_file(model)
-            tic = time.time()
-            que = ass.sort_bricks_ass(bricks,copy.deepcopy(model))
-            print "sort time = ", time.time()-tic
-            print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
-            print ""
-            for i in range(0,len(que)):
-                if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y']+que[i]['p']
-                else:
-                    print que[i]['x']+que[i]['p'],', ',que[i]['y']
-            model = fd.import_file("example.txt")
-            bricks = fd.decode_file(model)
-            tic = time.time()
-            que = ass.sort_bricks_ass(bricks,copy.deepcopy(model))
-            print "sort time = ", time.time()-tic
-            print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
-            print ""
-            for i in range(0,len(que)):
-                if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y']+que[i]['p']
-                else:
-                    print que[i]['x']+que[i]['p'],', ',que[i]['y']
-            model = fd.import_file("example.txt")
-            bricks = fd.decode_file(model)
-            tic = time.time()
-            que = ass.sort_bricks_ass(bricks,copy.deepcopy(model))
-            print "sort time = ", time.time()-tic
-            print "total cost = ",ass.list_cost(que,copy.deepcopy(model))
-            print ""
-            for i in range(0,len(que)):
-                if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y']+que[i]['p']
-                else:
-                    print que[i]['x']+que[i]['p'],', ',que[i]['y']
-            print "bricks: ", len(que)
 
+        if task =='flex':
+            ipt = int(raw_input("model1?"))
+            if ipt == 1:
+                model = fd.import_file("model1.txt")
+            elif ipt == 2:
+                model = fd.import_file("model2.txt")
+            elif ipt == 3:
+                model = fd.import_file("model3.txt")
+            elif ipt == 4:
+                model = fd.import_file("model4.txt")
+            elif ipt == 5:
+                model = fd.import_file("model5.txt")
+            elif ipt == 6:
+                model = fd.import_file("model6.txt")
+            bricks = fd.decode_file(model)
+            que,updated_model,opt = flx.sort_bricks_flex(bricks,model)
+            print "flex sort output: ",opt
+            print "-------------- build  --------------"
+            print "x",","," y",","," p",",","  r",","," z",",","ex",",","ey",","," b"
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',-que[i]['ye'],', ',que[i]['xe'],', ',que[i]['b']
+                else:
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye'],', ',que[i]['b']
+            ipt = raw_input("continue?")
+
+            que,opt = ass.sort_bricks_ass(que,copy.deepcopy(updated_model))
+            print "assembly sort output: ",opt
+            print "-------------- build  --------------"
+            print "x",","," y",","," p",",","  r",","," z",",","ex",",","ey",","," b"
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',-que[i]['ye'],', ',que[i]['xe'],', ',que[i]['b']
+                else:
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye'],', ',que[i]['b']
+            print ass.list_cost(que,updated_model)
+            ipt = raw_input("continue?")
+            tic = time.time()
+            delay = lm.assemble(c,ser_ee,que)
+            tock = time.time()
+            print "----------- assembly time ----------"
+            print "               ",tock-tic-delay
+            print "------------- resources ------------"
+            print "               ",len(que)
+
+            #que,opt = dis.sort_bricks_dis(que,copy.deepcopy(updated_model))
+            #print "disassembly sort output: ",opt
+            #print "-------------- build  --------------"
+            #print "x",","," y",","," p",",","  r",","," z",",","ex",",","ey",","," b"
+            #for i in range(0,len(que)):
+            #    if que[i]['r'] == 0 or que[i]['r'] == 180:
+            #        print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',-que[i]['ye'],', ',que[i]['xe'],', ',que[i]['b']
+            #    else:
+            #        print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye'],', ',que[i]['b']
+            #ipt = raw_input("continue?")
+            #lm.disassemble(c,ser_ee,que)
+
+        if task == "reflex":
+            ipt = int(raw_input("model1?"))
+            if ipt == 1:
+                model1 = fd.import_file("model1.txt")
+                model2 = fd.import_file("model2.txt")
+            elif ipt == 2:
+                model1 = fd.import_file("model2.txt")
+                model2 = fd.import_file("model3.txt")
+            elif ipt == 3:
+                model1 = fd.import_file("model3.txt")
+                model2 = fd.import_file("model4.txt")
+            elif ipt == 4:
+                model1 = fd.import_file("model4.txt")
+                model2 = fd.import_file("model5.txt")
+            elif ipt == 5:
+                model1 = fd.import_file("model5.txt")
+                model2 = fd.import_file("model6.txt")
+                
+            bricks1 = fd.decode_file(model1)
+            bricks2 = fd.decode_file(model2)
+            flex1,updated_model1,opt1 = flx.sort_bricks_flex(bricks1,model1)
+            flex2,updated_model2,opt2 = flx.sort_bricks_flex(bricks2,model2)
+            dis_list, ass_list = rea.reassemble(flex1,flex2,updated_model1,updated_model2)
+            #print "dis_list :",dis_list
+            #print "as_list :",ass_list
+            #ipt = raw_input("continue?")
+            que,opt = dis.sort_bricks_dis(dis_list,copy.deepcopy(updated_model1))
+            print "disassembly sort output: ",opt
+            print "-------------- remove --------------"
+            print "x",","," y",","," p",",","  r",","," z"
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z']
+                else:
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z']
+            ipt = raw_input("continue?")
+            tic1 = time.time()
+            lm.disassemble(c,ser_ee,que)
+            toc1 = time.time()
+            bricks_saved = len(que)
+            print ""
+            print ""
+            que,opt = ass.sort_bricks_ass(ass_list,copy.deepcopy(updated_model2))
+            print "assembly sort output: ",opt
+            print "-------------- build  --------------"
+            print "x",","," y",","," p",",","  r",","," z",","," ex",","," ey"
+            for i in range(0,len(que)):
+                if que[i]['r'] == 0 or que[i]['r'] == 180:
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',-que[i]['ye'],', ',que[i]['xe']
+                else:
+                    print que[i]['x'],', ',que[i]['y'],', ',que[i]['p'],', ',que[i]['r'],', ',que[i]['z'],', ',que[i]['xe'],', ',que[i]['ye']
+            ipt = raw_input("continue?")
+            tic2 = time.time()
+            delay = lm.assemble(c,ser_ee,que)
+            toc2 = time.time()
+
+            print "---------- reassembly time ---------"
+            print "               ",toc2-tic2-delay+toc1-tic1
+            print "------------- resources ------------"
+            print "               ",len(que)-bricks_saved
+        if task == 'time':
+            tic = time.time()
+            ipt = raw_input("Refill hopper and press enter to continue")
+            toc = time.time()
+            print toc-tic
 if __name__ == '__main__': main()
