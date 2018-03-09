@@ -50,14 +50,19 @@ def import_file(name):
     f = open(name,"r")
     file_string = f.read()
     f.close()
-    height = int(file_string[0])                                # intial value gives number of layers
+    if file_string[1] != '\n':
+        height = 10*int(file_string[0])+int(file_string[1])               # intial value gives number of layers
+        k = 1
+    else:
+        height = int(file_string[0])                    
+        k = 0
     model = [copy.deepcopy(grid_space)]
     for i in range(0,height-1):                                 # empty model array of corresponding height is created
         model.append(copy.deepcopy(grid_space))
     for z in range(0,height):                                   # model array is populated with bricks given by structure file
         for y in range(0,16):
             for x in range(0,32):
-                model[z][y][x] = int(file_string[3+x+33*y+(33*16+1)*z]) #3 start characters, 33 characters/line(y), 33*16+1 characters/layer(z)
+                model[z][y][x] = int(file_string[3+k+x+33*y+(33*16+1)*z]) #3 start characters, 33 characters/line(y), 33*16+1 characters/layer(z)
     return model
 
 # Reads model array and decodes into a list of bricks

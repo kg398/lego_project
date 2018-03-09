@@ -32,22 +32,23 @@ b11 = 2048
 
 # 2x4 bricks
 place_masks = [771,390,204]
-# [case][subcase][mask, xe, ye]
-case_masks = [[[4095,0,0]],
-              [[1023,1,0],[4047,-1,0]],
-              [[975,0,0]],
-              [[3327,0,-1],[3519,0,-1],[3903,0,-1],[4083,0,1],[4086,0,1],[4092,0,1]],
-              [[255,1,-1],[447,1,-1],[831,1,-1],[1011,1,1],[1014,1,1],[1020,1,1],[3279,-1,-1],[3471,-1,-1],[3855,-1,-1],[4035,-1,1],[4038,-1,1],[4044,-1,1]],
-              [[3324,0,0],[3510,0,0],[3891,0,0]],
-              [[252,1,0],[438,1,0],[819,1,0],[3276,-1,0],[3462,-1,0],[3843,-1,0]],
-              [[207,0,-1],[399,0,-1],[783,0,-1],[963,0,1],[966,0,1],[972,0,1]],
-              [[204,0,0],[390,0,0],[771,0,0]]]
+# [case][subcase][mask,p , xe, ye, cost]
+case_masks = [[[4095,1,0,0,0]],#0
+              [[1023,1,1,0,0.2],[4047,1,-1,0,0.2]],#1
+              [[3327,2,0,-1,0.2],[3519,1,0,-1,0.2],[3903,0,0,-1,0.2],[4083,0,0,1,0.2],[4086,1,0,1,0.2],[4092,2,0,1,0.2]],#3
+              [[255,2,1,-1,0.4],[447,1,1,-1,0.4],[831,0,1,-1,0.4],[1011,0,1,1,0.4],[1014,1,1,1,0.4],[1020,2,1,1,0.4],[3279,2,-1,-1,0.4],[3471,1,-1,-1,0.4],[3855,0,-1,-1,0.4],[4035,0,-1,1,0.4],[4038,1,-1,1,0.4],[4044,2,-1,1,0.4]],#4
+              [[975,1,0,0,1]],#2
+              [[3324,2,0,0,1],[3510,1,0,0,1],[3891,0,0,0,1]],#5
+              [[207,2,0,-1,1.2],[399,1,0,-1,1.2],[783,0,0,-1,1.2],[963,0,0,1,1.2],[966,1,0,1,1.2],[972,2,0,1,1.2]],#7
+              [[252,2,1,0,1.2],[438,1,1,0,1.2],[819,0,1,0,1.2],[3276,2,-1,0,1.2],[3462,1,-1,0,1.2],[3843,0,-1,0,1.2]],#6
+              [[204,2,0,0,2],[390,1,0,0,2],[771,0,0,0,2]]]#8
 
 # 2x2 bricks
 place_masks1 = [204,51]
-case_masks1 = [[255],
-               [63,207,243,252],
-               [51,204]]
+# [case][subcase][mask,p , xe, ye, r, cost]
+case_masks1 = [[[255,0,0,0,0,0]],#0
+               [[63,0,1,0,90,0.2],[207,0,0,-1,0,0.2],[243,0,-1,0,90,0.2],[252,0,0,1,0,0.2]],#1
+               [[51,0,0,0,0,1],[204,0,0,0,90,1]]]#2
 
 # master function for sorting brick list into a disassemble que, quick sort(not always optimal)
 # -identify separate layers
@@ -87,7 +88,7 @@ def sort_bricks_ass(bricks,model):
     # update picking method
     build_que = list(list_placing(build_que,model))
 
-    return build_que,'y'
+    return build_que,'y'#,p #temp delete p
 
 # master function for brute force sort
 # -identify separate layers
@@ -300,291 +301,72 @@ def list_cost(bricks,model):
 # use constraints to estimate the cost of a specific action
 def brick_cost(brick,constraints):
     if brick['b']==0:
-        # -------------- case 0 -------------- #
-        for i in range(0,len(case_masks[0])):
-            if constraints & case_masks[0][i][0] == 0:
-                return 0
-        # -------------- case 1 -------------- #
-        for i in range(0,len(case_masks[1])):
-            if constraints & case_masks[1][i][0] == 0:
-                return 0.2
-        # -------------- case 3 -------------- #
-        for i in range(0,len(case_masks[3])):
-            if constraints & case_masks[3][i][0] == 0:
-                return 0.2
-        # -------------- case 4 -------------- #
-        for i in range(0,len(case_masks[4])):
-            if constraints & case_masks[4][i][0] == 0:
-                return 0.4
-        # -------------- case 2 -------------- #
-        for i in range(0,len(case_masks[2])):
-            if constraints & case_masks[2][i][0] == 0:
-                return 1
-        # -------------- case 5 -------------- #
-        for i in range(0,len(case_masks[5])):
-            if constraints & case_masks[5][i][0] == 0:
-                return 1
-        # -------------- case 6 -------------- #
-        for i in range(0,len(case_masks[6])):
-            if constraints & case_masks[6][i][0] == 0:
-                return 1.2
-        # -------------- case 7 -------------- #
-        for i in range(0,len(case_masks[7])):
-            if constraints & case_masks[7][i][0] == 0:
-                return 1.2
-        # -------------- case 8 -------------- #
-        for i in range(0,len(case_masks[8])):
-            if constraints & case_masks[8][i][0] == 0:
-                return 2
+        for i in range(0,9):
+            for j in range(0,len(case_masks[i])):
+                if constraints & case_masks[i][j][0] == 0:
+                    return case_masks[i][j][4]
     
     elif brick['b']==1:
-        # -------------- case 0 -------------- #
-        for i in range(0,len(case_masks1[0])):
-            if constraints & case_masks1[0][i] == 0:
-                return 0
-        # -------------- case 1 -------------- #
-        for i in range(0,len(case_masks1[1])):
-            if constraints & case_masks1[1][i] == 0:
-                return 0.2
-        # -------------- case 2 -------------- #
-        for i in range(0,len(case_masks1[2])):
-            if constraints & case_masks1[2][i] == 0:
-                return 1
+        for i in range(0,3):
+            for j in range(0,len(case_masks1[i])):
+                if constraints & case_masks1[i][j][0] == 0:
+                    return case_masks1[i][j][5]
 
     return 5
 
-# generate the cost of a list of bricks
+# generate the cost of a list of bricks and update placing method
 def list_placing(bricks,model):
     updated_model = list(model)
+    P = 1
     k = len(bricks)
     for i in range(0,k):
         constraints = fd.brick_constraints(bricks[k-1-i],updated_model)
-        bricks[k-1-i] = dict(update_placing(bricks[k-1-i],constraints))
+        bricks[k-1-i] = dict(update_placing(bricks[k-1-i],constraints)) #temp dict(update_placing) once deleted p
+        #P = P*p
         updated_model = fd.update_model(bricks[k-1-i:k-i],updated_model)
-    return bricks
+    return bricks#,P #temp delete p
 
+# 2x4 bricks
+# [case][subcase][mask,p , xe, ye]
+#case_masks = [[[4095,1,0,0]],#0
+#              [[1023,1,1,0],[4047,1,-1,0]],#1
+#              [[3327,2,0,-1],[3519,1,0,-1],[3903,0,0,-1],[4083,0,0,1],[4086,1,0,1],[4092,2,0,1]],#3
+#              [[255,2,1,-1],[447,1,1,-1],[831,0,1,-1],[1011,0,1,1],[1014,1,1,1],[1020,2,1,1],[3279,2,-1,-1],[3471,1,-1,-1],[3855,0,-1,-1],[4035,0,-1,1],[4038,1,-1,1],[4044,2,-1,1]],#4
+#              [[975,1,0,0]],#2
+#              [[3324,2,0,0],[3510,1,0,0],[3891,0,0,0]],#5
+#              [[207,2,0,-1],[399,1,0,-1],[783,0,0,-1],[963,0,0,1],[966,1,0,1],[972,2,0,1]],#7
+#              [[252,2,1,0],[438,1,1,0],[819,0,1,0],[3276,2,-1,0],[3462,1,-1,0],[3843,0,-1,0]],#6
+#              [[204,2,0,0],[390,1,0,0],[771,0,0]]]#8
+
+# 2x2 bricks
+# [case][subcase][mask,p , xe, ye, r]
+#case_masks1 = [[[255,0,0,0,0]],
+#               [[63,0,1,0,90],[207,0,0,-1,0],[243,0,-1,0,90],[252,0,0,1,0]],
+#               [[51,0,0,0,0],[204,0,0,0,90]]]
 # use constraints to redefine placing method
+#Prob = [1,0.99,0.99,0.98,0.91,0.91,0.9,0.9,0.83]
+#Prob1 = [1,0.99,0.91]
+
 def update_placing(brick,constraints):
+    p = 0
     if brick['b']==0:
-        # -------------- case 8 -------------- #
-        if constraints & case_masks[8][0][0] == 0:
-            brick['p']=2
-            brick['xe']=0
-            brick['ye']=0
-        elif constraints & case_masks[8][1][0] == 0:
-            brick['p']=1
-            brick['xe']=0
-            brick['ye']=0
-        elif constraints & case_masks[8][2][0] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=0
+        for i in range(0,9):
+            for j in range(0,len(case_masks[8-i])):
+                if constraints & case_masks[8-i][j][0] == 0:
+                    brick['p']=case_masks[8-i][j][1]
+                    brick['xe']=case_masks[8-i][j][2]
+                    brick['ye']=case_masks[8-i][j][3]
+                    #p = Prob[8-i]
 
-        # -------------- case 7 -------------- #
-        if constraints & case_masks[7][0][0] == 0:
-            brick['p']=2
-            brick['xe']=0
-            brick['ye']=-1
-        elif constraints & case_masks[7][1][0] == 0:
-            brick['p']=1
-            brick['xe']=0
-            brick['ye']=-1
-        elif constraints & case_masks[7][2][0] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=-1
-        elif constraints & case_masks[7][3][0] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=1
-        elif constraints & case_masks[7][4][0] == 0:
-            brick['p']=1
-            brick['xe']=0
-            brick['ye']=1
-        elif constraints & case_masks[7][5][0] == 0:
-            brick['p']=2
-            brick['xe']=0
-            brick['ye']=1
-
-        # -------------- case 6 -------------- #
-        if constraints & case_masks[6][0][0] == 0:
-            brick['p']=2
-            brick['xe']=1
-            brick['ye']=0
-        elif constraints & case_masks[6][1][0] == 0:
-            brick['p']=1
-            brick['xe']=1
-            brick['ye']=0
-        elif constraints & case_masks[6][2][0] == 0:
-            brick['p']=0
-            brick['xe']=1
-            brick['ye']=0
-        elif constraints & case_masks[6][3][0] == 0:
-            brick['p']=2
-            brick['xe']=-1
-            brick['ye']=0
-        elif constraints & case_masks[6][4][0] == 0:
-            brick['p']=1
-            brick['xe']=-1
-            brick['ye']=0
-        elif constraints & case_masks[6][5][0] == 0:
-            brick['p']=0
-            brick['xe']=-1
-            brick['ye']=0
-
-        # -------------- case 5 -------------- #
-        if constraints & case_masks[5][0][0] == 0:
-            brick['p']=2
-            brick['xe']=0
-            brick['ye']=0
-        elif constraints & case_masks[5][1][0] == 0:
-            brick['p']=1
-            brick['xe']=0
-            brick['ye']=0
-        elif constraints & case_masks[5][2][0] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=0
-
-        # -------------- case 2 -------------- #
-        if constraints & case_masks[2][0][0] == 0:
-            brick['p']=1
-            brick['xe']=0
-            brick['ye']=0
-
-        # -------------- case 4 -------------- #
-        if constraints & case_masks[4][0][0] == 0:
-            brick['p']=2
-            brick['xe']=1
-            brick['ye']=-1
-        elif constraints & case_masks[4][1][0] == 0:
-            brick['p']=1
-            brick['xe']=1
-            brick['ye']=-1
-        elif constraints & case_masks[4][2][0] == 0:
-            brick['p']=0
-            brick['xe']=1
-            brick['ye']=-1
-        elif constraints & case_masks[4][3][0] == 0:
-            brick['p']=0
-            brick['xe']=1
-            brick['ye']=1
-        elif constraints & case_masks[4][4][0] == 0:
-            brick['p']=1
-            brick['xe']=1
-            brick['ye']=1
-        elif constraints & case_masks[4][5][0] == 0:
-            brick['p']=2
-            brick['xe']=1
-            brick['ye']=1
-        elif constraints & case_masks[4][6][0] == 0:
-            brick['p']=2
-            brick['xe']=-1
-            brick['ye']=-1
-        elif constraints & case_masks[4][7][0] == 0:
-            brick['p']=1
-            brick['xe']=-1
-            brick['ye']=-1
-        elif constraints & case_masks[4][8][0] == 0:
-            brick['p']=0
-            brick['xe']=-1
-            brick['ye']=-1
-        elif constraints & case_masks[4][9][0] == 0:
-            brick['p']=0
-            brick['xe']=-1
-            brick['ye']=1
-        elif constraints & case_masks[4][10][0] == 0:
-            brick['p']=1
-            brick['xe']=-1
-            brick['ye']=1
-        elif constraints & case_masks[4][11][0] == 0:
-            brick['p']=2
-            brick['xe']=-1
-            brick['ye']=1
-
-        # -------------- case 3 -------------- #
-        if constraints & case_masks[3][0][0] == 0:
-            brick['p']=2
-            brick['xe']=0
-            brick['ye']=-1
-        elif constraints & case_masks[3][1][0] == 0:
-            brick['p']=1
-            brick['xe']=0
-            brick['ye']=-1
-        elif constraints & case_masks[3][2][0] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=-1
-        elif constraints & case_masks[3][3][0] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=1
-        elif constraints & case_masks[3][4][0] == 0:
-            brick['p']=1
-            brick['xe']=0
-            brick['ye']=1
-        elif constraints & case_masks[3][5][0] == 0:
-            brick['p']=2
-            brick['xe']=0
-            brick['ye']=1
-
-        # -------------- case 1 -------------- #
-        if constraints & case_masks[1][0][0] == 0:
-            brick['p']=1
-            brick['xe']=1
-            brick['ye']=0
-        elif constraints & case_masks[1][1][0] == 0:
-            brick['p']=1
-            brick['xe']=-1
-            brick['ye']=0
-
-        # -------------- case 0 -------------- #
-        if constraints & case_masks[0][0][0] == 0:
-            brick['p']=1
-            brick['xe']=0
-            brick['ye']=0
 
     elif brick['b']==1:
-        # -------------- case 2 -------------- #
-        if constraints & case_masks1[2][0] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=0
-            brick['r']=0
-        elif constraints & case_masks1[2][1] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=0
-            brick['r']=90
+        for i in range(0,3):
+            for j in range(0,len(case_masks1[2-i])):
+                if constraints & case_masks1[2-i][j][0] == 0:
+                    brick['p']=case_masks1[2-i][j][1]
+                    brick['xe']=case_masks1[2-i][j][2]
+                    brick['ye']=case_masks1[2-i][j][3]
+                    brick['r']=case_masks1[2-i][j][4]
+                    #p = Prob[2-i]
 
-        # -------------- case 1 -------------- #
-        if constraints & case_masks1[1][0] == 0:
-            brick['p']=0
-            brick['xe']=1
-            brick['ye']=0
-            brick['r']=90
-        if constraints & case_masks1[1][1] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=-1
-            brick['r']=0
-        if constraints & case_masks1[1][2] == 0:
-            brick['p']=0
-            brick['xe']=-1
-            brick['ye']=0
-            brick['r']=90
-        if constraints & case_masks1[1][3] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=1
-            brick['r']=0
-
-        # -------------- case 0 -------------- #
-        if constraints & case_masks1[0][0] == 0:
-            brick['p']=0
-            brick['xe']=0
-            brick['ye']=0
-            brick['r']=0
-
-
-    return brick
+    return brick#,p #temp delete p

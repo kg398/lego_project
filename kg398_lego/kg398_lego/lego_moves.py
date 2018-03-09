@@ -43,20 +43,29 @@ def assemble(c,ser_ee,bricks):
 # Disassemble a build que
 def disassemble(c,ser_ee,bricks):
     for i in range(0,len(bricks)):                              # pick brick, place in feed system, move up, repeat for whole list
+        flag = 1
+        if bricks[i]['p'] == 3:
+            feed_pick(c,ser_ee)
+            msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2,Speed=1.05)
+            flag = 2
+            bricks[i]['p'] = 1
+
+
         if bricks[i]['r'] == 0 or bricks[i]['r'] == 180:
-            grid_pick(c,ser_ee,bricks[i]['x'],bricks[i]['y']+bricks[i]['p'],bricks[i]['z'],bricks[i]['r'])
+            grid_pick(c,ser_ee,bricks[i]['x'],bricks[i]['y']+bricks[i]['p'],bricks[i]['z'],bricks[i]['r'],stack=flag)
         else:
-            grid_pick(c,ser_ee,bricks[i]['x']+bricks[i]['p'],bricks[i]['y'],bricks[i]['z'],bricks[i]['r'])
+            grid_pick(c,ser_ee,bricks[i]['x']+bricks[i]['p'],bricks[i]['y'],bricks[i]['z'],bricks[i]['r'],stack=flag)
         
         msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2,Speed=1.05)
 
-        feed_place(c,ser_ee,H=bricks[i]['b'])
-        
+        stack_place(c,ser_ee,sH=bricks[i]['b'],stack=flag)
+
         msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2,Speed=1.05)
+ 
     return
 
 # Pick from feed system
-def feed_pick(c,ser_ee,X=1,H=0):
+def feed_pick(c,ser_ee,X=1,H=0,stack=1):
     ic.socket_send(c,sCMD=300)                                  # select lego tcp (tool centre point)
     if H==0:
         if X == 0:
@@ -83,14 +92,80 @@ def feed_pick(c,ser_ee,X=1,H=0):
     #msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4,Speed=0.5) 
 
     ic.super_serial_send(ser_ee,"G",49) 
-
+    
     demand_Pose['z'] = demand_Pose['z']+40
     msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4) 
+
+    while stack > 1:
+        time.sleep(0.3)
+
+        stack -= 1
+        demand_Pose['z'] = demand_Pose['z']-40+8
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4)
+
+        ic.socket_send(c,sCMD=300+stack) 
+        demand_Pose = dict(smooth_rotate(c,R=2))
+        demand_Pose['y'] = demand_Pose['y']+0.5
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)                     # rotate grabber
+
+        demand_Pose['y'] = demand_Pose['y']-0.5
+        demand_Pose['z'] = demand_Pose['z']+40
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4) 
+
+    return
+
+def stack_place(c,ser_ee,sH=0,stack=1):
+    ic.socket_send(c,sCMD=300)                           # select lego tcp (tool centre point)
+
+    # separate stack by placing in pick position
+    if stack == 2:
+        demand_Pose = dict(wp.Hopper0_feed1)
+
+        demand_Pose['z'] = demand_Pose['z']+38
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4)           # move above brick
+
+        demand_Pose['z'] = demand_Pose['z']-20
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8) 
+
+        demand_Pose = dict(smooth_rotate(c,R=15*stack))
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)                     # rotate grabber
+
+        current_Pose = ic.get_ur_position(c,1)
+        demand_Pose = {'x':current_Pose[0],'y':current_Pose[1],'z':current_Pose[2]+80,'rx':current_Pose[3],'ry':current_Pose[4],'rz':current_Pose[5]}
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)
+
+    feed_place(c,ser_ee,H=sH)
+
+    # separate stack by placing in pick position
+    if stack == 2:
+        demand_Pose = dict(wp.Hopper0_feed1)
+
+        demand_Pose['z'] = demand_Pose['z']+28.5
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4)           # move above brick
+
+        demand_Pose['z'] = demand_Pose['z']-20
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8) 
+
+        ic.super_serial_send(ser_ee,"G",49) 
+
+        demand_Pose['x'] = wp.Hopper0_feed0['x']
+        demand_Pose['y'] = wp.Hopper0_feed0['y']
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)
+
+        demand_Pose = dict(smooth_rotate(c,R=30))
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)                     # rotate grabber
+
+        current_Pose = ic.get_ur_position(c,1)
+        demand_Pose = {'x':current_Pose[0],'y':current_Pose[1],'z':current_Pose[2]+80,'rx':current_Pose[3],'ry':current_Pose[4],'rz':current_Pose[5]}
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)
+
+        feed_place(c,ser_ee,H=sH)
+
     return
 
 # Place in feed system
 def feed_place(c,ser_ee,H=0):
-    ic.socket_send(c,sCMD=300)                                  # select lego tcp (tool centre point)
+    ic.socket_send(c,sCMD=300)                           # select lego tcp (tool centre point)
 
     if H==0:
         demand_Joints = dict(wp.Hopper0_stow_wp_joints)
@@ -105,58 +180,57 @@ def feed_place(c,ser_ee,H=0):
 
     ic.super_serial_send(ser_ee,"G",51) 
 
-    demand_Pose['x'] = demand_Pose['x']-3
+    demand_Pose['x'] = demand_Pose['x']+3
     msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4)
 
-    demand_Pose['x'] = demand_Pose['x']+3
+    demand_Pose = dict(smooth_rotate(c,R=15))
+    msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)
+
+    demand_Pose['x'] = demand_Pose['x']-3
     msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4)
 
     demand_Pose['y'] = demand_Pose['y']-20
     msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)
 
     msg = ic.safe_ur_move(c,Pose=dict(demand_Joints),CMD=2,Speed=1.05)
-
-    #demand_Pose['z'] = demand_Pose['z']-20
-    #msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4)
-
-    #demand_Pose['z'] = demand_Pose['z']+20
-    #msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4)
     return
 
 # Pick from a grid location
-def grid_pick(c,ser_ee,x,y,z,r):
-    ic.socket_send(c,sCMD=300)                                  # select lego tcp (tool centre point)
+def grid_pick(c,ser_ee,x,y,z,r,stack=1):
+    ic.socket_send(c,sCMD=300)                                          # select lego tcp (tool centre point)
 
-    demand_Joints = dict(grid_pos(c,x,y,z+2,r))
-    msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=1.05)           # move above brick
+    demand_Joints = dict(grid_pos(c,x,y,z+1+stack,r))
+    msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=1.05)        # move above brick
 
     #ic.super_serial_send(ser_ee,"G",51)
 
-    demand_Joints = dict(grid_pos(c,x,y,z+0.9,r))
+    demand_Joints = dict(grid_pos(c,x,y,z-0.1+stack,r))
     msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.5)
 
-    demand_Joints = dict(grid_pos(c,x,y,z-0.01,r))
+    demand_Joints = dict(grid_pos(c,x,y,z-1.01+stack,r))
     msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.1)
 
-    ic.super_serial_send(ser_ee,"G",49)                         # close grabber
+    if stack == 1:
+        ic.super_serial_send(ser_ee,"G",49)                             # close grabber
 
-    demand_Pose = dict(smooth_rotate(c,r,R=15))                 
+    ic.socket_send(c,sCMD=299+stack) 
+    demand_Pose = dict(smooth_rotate(c,R=15))                 
     #print "demand_Pose: ",demand_Pose
     #ipt = raw_input("continue?")
-    msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)             # rotate grabber
+    msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)                     # rotate grabber
 
     current_Pose = ic.get_ur_position(c,1)
     demand_Pose = {'x':current_Pose[0],'y':current_Pose[1],'z':current_Pose[2]+20,'rx':current_Pose[3],'ry':current_Pose[4],'rz':current_Pose[5]}
     msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)
 
-    demand_Joints = dict(grid_pos(c,x,y,z+2,r))
-    msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.5) # move back up
+    demand_Joints = dict(grid_pos(c,x,y,z+1+stack,r))
+    msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.5)         # move back up
 
 # Place in a grid location
 def grid_place(c,ser_ee,x,y,z,r,XE=0,YE=0):
-    ic.socket_send(c,sCMD=300)                                  # select lego tcp
+    ic.socket_send(c,sCMD=300)                                          # select lego tcp
 
-    alpha = 0.5
+    alpha = 0.3
     XE = alpha*XE
     YE = alpha*YE
     
@@ -171,8 +245,8 @@ def grid_place(c,ser_ee,x,y,z,r,XE=0,YE=0):
 
     ic.super_serial_send(ser_ee,"G",51)                         # open grabber
 
-    ic.socket_send(c,sCMD=301)  
-    demand_Pose = dict(smooth_rotate(c,r,R=1))
+    ic.socket_send(c,sCMD=299)  
+    demand_Pose = dict(smooth_rotate(c,R=1))
     msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)             # rotate grabber
     ic.socket_send(c,sCMD=300)  
 
@@ -227,7 +301,7 @@ def grid_pos(c,x,y,z,r):
 
 # Calculates a demand pose to give a rotation about desired axis
 # Returns demand_Pose
-def smooth_rotate(c,r,R=15):
+def smooth_rotate(c,R=15):
     # axis-angle combination formula
     #current_Pose = ic.get_ur_position(c,1)
     #T1 = math.pi*math.sqrt(current_Pose[3]*current_Pose[3]+current_Pose[4]*current_Pose[4]+current_Pose[5]*current_Pose[5])/180
@@ -258,27 +332,3 @@ def smooth_rotate(c,r,R=15):
     trans_pose = ic.get_ur_position(c,11,trans)                             # returns current pose transformed by 'trans'
         
     return {"x": trans_pose[0], "y": trans_pose[1], "z": trans_pose[2], "rx": trans_pose[3], "ry": trans_pose[4], "rz": trans_pose[5]}
-
-
-
-# Test function for picking multiple bricks simulateously, by changing lego tcp, axis of smooth rotate is altered
-def stack_pick(c,ser_ee,x,y,z,r,stack=1):
-    demand_Joints = dict(grid_pos(c,x,y,z+1,r))
-    msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2)
-
-    ic.socket_send(c,sCMD=299+stack)
-
-    ic.super_serial_send(ser_ee,"G",51)
-
-    demand_Joints = dict(grid_pos(c,x,y,z,r))
-    msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.1)
-
-    ic.super_serial_send(ser_ee,"G",49)
-
-    demand_Pose = dict(smooth_rotate(c,r,R=20))
-    #print "demand_Pose: ",demand_Pose
-    #ipt = raw_input("continue?")
-    msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)
-
-    demand_Joints = dict(grid_pos(c,x,y,z+1,r))
-    msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.5)

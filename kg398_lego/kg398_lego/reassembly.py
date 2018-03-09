@@ -28,8 +28,18 @@ def reassemble(bricks_old,bricks_new,model_old,model_new):
                 flag = 1
         if flag == 0: #brick doesn't exist in old structure
             dis_list.append(bricks_old[i]) 
-            if bricks_new[i]['z']<lowest['z']:
+            if bricks_old[i]['z']<lowest['z']:
                 lowest = bricks_old[i]
+
+    # find lowest new brick
+    for i in range(0,len(bricks_new)):
+        flag = 0
+        for j in range(0,len(bricks_old)):
+            if fd.match_bricks(bricks_new[i],bricks_old[j]) == 1:
+                flag = 1
+        if flag == 0: #brick doesn't exist in old structure
+            if bricks_new[i]['z']<lowest['z']:
+                lowest = bricks_new[i]
 
     # find min no. bricks to safely disasseble
     for i in range(0,len(dis_list)):
@@ -50,6 +60,8 @@ def reassemble(bricks_old,bricks_new,model_old,model_new):
             index = i
             break
     dis_list = dis_list + list(bricks_old[index:])
+    if len(dis_list)>0:
+        dis_list = copy.deepcopy(remove_duplicates(dis_list))
     
     # update bricks_old list
     bricks_intermediate = []
@@ -214,34 +226,6 @@ def find_brick(x,y,z,updated_model):
         if updated_model[brick['z']][brick['y']+1][brick['x']+3] == updated_model[brick['z']][brick['y']][brick['x']]:    # horizontal brick, 'r' = 90 and default picking location in centre of brick
             brick['r']=90
             brick['b']=0
-
-    #if x < 31 and y < 13:
-    #    if updated_model[z][y+3][x+1] == updated_model[z][y][x]:
-    #        brick = {'x':x,'y':y,'z':z,'r':0,'p':1,'xe':0,'ye':0}
-    #if x < 29 and y < 15:
-    #    if updated_model[z][y+1][x+3] == updated_model[z][y][x]:
-    #        brick = {'x':x,'y':y,'z':z,'r':90,'p':1,'xe':0,'ye':0}
-
-    #if x < 31 and y > 2:
-    #    if updated_model[z][y-3][x+1] == updated_model[z][y][x]:
-    #        brick = {'x':x,'y':y-3,'z':z,'r':0,'p':1,'xe':0,'ye':0}
-    #if x < 29 and y < 0:
-    #    if updated_model[z][y-1][x+3] == updated_model[z][y][x]:
-    #        brick = {'x':x,'y':y-1,'z':z,'r':90,'p':1,'xe':0,'ye':0}
-
-    #if x > 0 and y > 2:
-    #    if updated_model[z][y-3][x-1] == updated_model[z][y][x]:
-    #        brick = {'x':x-1,'y':y-3,'z':z,'r':0,'p':1,'xe':0,'ye':0}
-    #if x > 2 and y > 0:
-    #    if updated_model[z][y-1][x-3] == updated_model[z][y][x]:
-    #        brick = {'x':x-3,'y':y-1,'z':z,'r':90,'p':1,'xe':0,'ye':0}
-
-    #if x > 0 and y < 13:
-    #    if updated_model[z][y+3][x-1] == updated_model[z][y][x]:
-    #        brick = {'x':x-1,'y':y,'z':z,'r':0,'p':1,'xe':0,'ye':0}
-    #if x > 2 and y < 15:
-    #    if updated_model[z][y+1][x-3] == updated_model[z][y][x]:
-    #        brick = {'x':x-3,'y':y,'z':z,'r':90,'p':1,'xe':0,'ye':0}
 
     return brick
 
