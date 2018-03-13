@@ -15,8 +15,13 @@ import ur_waypoints as wp
 def assemble(c,ser_ee,bricks):
     delay = 0
     n = 0
+    flag = 1
     for i in range(0,len(bricks)):                              # get brick from feed system, place in demand position, move up, repeat for whole list
-        if bricks[i]['b']==0:
+        if bricks[i]['p']==3:
+            feed_pick(c,ser_ee,stack=2)
+            flag = 2
+            bricks[i]['p']=1
+        elif bricks[i]['b']==0:
             if bricks[i]['r'] == 0 or bricks[i]['r'] == 180:
                 feed_pick(c,ser_ee,X=bricks[i]['p'])
             else:
@@ -25,9 +30,9 @@ def assemble(c,ser_ee,bricks):
             feed_pick(c,ser_ee,X=2,H=1)
 
         if bricks[i]['r'] == 0 or bricks[i]['r'] == 180:
-            grid_place(c,ser_ee,bricks[i]['x'],bricks[i]['y']+bricks[i]['p'],bricks[i]['z'],bricks[i]['r'],XE=-bricks[i]['ye'],YE=bricks[i]['xe'])
+            grid_place(c,ser_ee,bricks[i]['x'],bricks[i]['y']+bricks[i]['p'],bricks[i]['z'],bricks[i]['r'],XE=-bricks[i]['ye'],YE=bricks[i]['xe'],stack=flag)
         else:
-            grid_place(c,ser_ee,bricks[i]['x']+bricks[i]['p'],bricks[i]['y'],bricks[i]['z'],bricks[i]['r'],XE=bricks[i]['xe'],YE=bricks[i]['ye'])
+            grid_place(c,ser_ee,bricks[i]['x']+bricks[i]['p'],bricks[i]['y'],bricks[i]['z'],bricks[i]['r'],XE=bricks[i]['xe'],YE=bricks[i]['ye'],stack=flag)
 
         msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2,Speed=1.05)
 
@@ -103,14 +108,22 @@ def feed_pick(c,ser_ee,X=1,H=0,stack=1):
         demand_Pose['z'] = demand_Pose['z']-40+8
         msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4)
 
-        ic.socket_send(c,sCMD=300+stack) 
-        demand_Pose = dict(smooth_rotate(c,R=2))
+        #ic.socket_send(c,sCMD=300+stack) 
+        #demand_Pose = dict(smooth_rotate(c,R=0.5))
         demand_Pose['y'] = demand_Pose['y']+0.5
+        #demand_Pose['x'] = wp.Hopper0_feed0['x']
+        #demand_Pose['y'] = wp.Hopper0_feed0['y']
         msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)                     # rotate grabber
+        
+        #demand_Pose['y'] = demand_Pose['y']-0.5
+        demand_Pose['z'] = demand_Pose['z']+5
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8,Speed=0.001) 
 
         demand_Pose['y'] = demand_Pose['y']-0.5
-        demand_Pose['z'] = demand_Pose['z']+40
-        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=4) 
+        #demand_Pose['x'] = wp.Hopper0_feed1['x']
+        #demand_Pose['y'] = wp.Hopper0_feed1['y']
+        demand_Pose['z'] = demand_Pose['z']+35
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8,Speed=0.05) 
 
     return
 
@@ -207,7 +220,7 @@ def grid_pick(c,ser_ee,x,y,z,r,stack=1):
     demand_Joints = dict(grid_pos(c,x,y,z-0.1+stack,r))
     msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.5)
 
-    demand_Joints = dict(grid_pos(c,x,y,z-1.01+stack,r))
+    demand_Joints = dict(grid_pos(c,x,y,z-1+stack,r))
     msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.1)
 
     if stack == 1:
@@ -227,34 +240,48 @@ def grid_pick(c,ser_ee,x,y,z,r,stack=1):
     msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.5)         # move back up
 
 # Place in a grid location
-def grid_place(c,ser_ee,x,y,z,r,XE=0,YE=0):
+def grid_place(c,ser_ee,x,y,z,r,XE=0,YE=0,stack=1):
     ic.socket_send(c,sCMD=300)                                          # select lego tcp
 
     alpha = 0.3
     XE = alpha*XE
     YE = alpha*YE
     
-    demand_Joints = dict(grid_pos(c,x+XE,y+YE,z+2,r))
+    demand_Joints = dict(grid_pos(c,x+XE,y+YE,z+1+stack,r))
     msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=1.05)           # move above location
 
-    demand_Joints = dict(grid_pos(c,x,y,z+0.5,r))
+    demand_Joints = dict(grid_pos(c,x,y,z-0.5+stack,r))
     msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.5)
 
-    demand_Joints = dict(grid_pos(c,x,y,z,r))
+    demand_Joints = dict(grid_pos(c,x,y,z-1+stack,r))
     msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.1)
 
-    ic.super_serial_send(ser_ee,"G",51)                         # open grabber
+    if stack == 1:
+        ic.super_serial_send(ser_ee,"G",51)                         # open grabber
 
-    ic.socket_send(c,sCMD=299)  
-    demand_Pose = dict(smooth_rotate(c,R=1))
-    msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)             # rotate grabber
-    ic.socket_send(c,sCMD=300)  
+        ic.socket_send(c,sCMD=299)  
+        demand_Pose = dict(smooth_rotate(c,R=3))
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)             # rotate grabber
+        ic.socket_send(c,sCMD=300)  
+
+        demand_Joints = dict(grid_pos(c,x,y,z+1+stack,r))
+        msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2)           # move back up
+
+    elif stack == 2:
+        demand_Pose = dict(smooth_rotate(c,R=15))
+        msg = ic.safe_ur_move(c,Pose=demand_Pose,CMD=8)             # rotate grabber
+
+        demand_Joints = dict(grid_pos(c,x,y,z+1+stack,r))
+        msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2)           # move back up
+
+        msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2,Speed=1.05)
+
+        feed_place(c,ser_ee,H=0)
 
     #demand_Joints = dict(grid_pos(c,x,y,z+0.3,r))
     #msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2,Speed=0.1)           # move back up
 
-    demand_Joints = dict(grid_pos(c,x,y,z+2,r))
-    msg = ic.safe_ur_move(c,Pose=demand_Joints,CMD=2)           # move back up
+    
     return
 
 # Converts grid position to robot co-ordinates

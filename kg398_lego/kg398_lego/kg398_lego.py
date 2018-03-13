@@ -198,9 +198,9 @@ def main():
             print opt
             for i in range(0,len(que)):
                 if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z']
+                    print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['p']
                 else:
-                    print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z']
+                    print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z'],', ',que[i]['p']
             ipt = raw_input("continue?")
             #lm.assemble(c,ser_ee,bricks)
             #ipt = raw_input("continue?")

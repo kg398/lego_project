@@ -40,8 +40,9 @@ def sort_bricks_dis(bricks,model):
         sub_groups.append([0])
         #print "layer ", i,": "
         sub_group,build_que[layers[i]:layers[i+1]] = copy.deepcopy(sort_layer_dis(bricks[layers[i]:layers[i+1]],model))
-        if sub_group == 'n':
-            return build_que[layers[i]:layers[i+1]],'n'
+        # uncomment for flexible assembly
+        #if sub_group == 'n':
+        #    return build_que[layers[i]:layers[i+1]],'n'
         for j in range(0,len(sub_group)):
             sub_groups.append(sub_group)
 
@@ -91,10 +92,10 @@ def sort_pickable_dis(sub_bricks,model):
         if sub_bricks[i]['b']==0:
             flag = 0
             # -----------------comment out for flexible assembly-------------------
-            for j in range(0,len(pick_masks[2])):                   # if constraints allow a tool pick...
-                if constraints&pick_masks[2][j][0] == 0:           
-                    sub_que[pick] = copy.deepcopy(sub_bricks[i])
-                    flag = 1
+            #for j in range(0,len(pick_masks[2])):                   # if constraints allow a tool pick...
+            #    if constraints&pick_masks[2][j][0] == 0:           
+            #        sub_que[pick] = copy.deepcopy(sub_bricks[i])
+            #        flag = 1
             # ---------------------------------------------------------------------
 
             for j in range(0,len(pick_masks[0])):                   # if constraints allow a normal pick...
