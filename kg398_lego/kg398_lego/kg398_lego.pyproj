@@ -34,6 +34,9 @@
     <Compile Include="flex_reassembly.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="game_of_life.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="kg398_lego.py" />
     <Compile Include="lego_moves.py">
       <SubType>Code</SubType>

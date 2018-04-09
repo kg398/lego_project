@@ -26,7 +26,8 @@ def reassemble(bricks_old,bricks_new,model_old,model_new):
         for j in range(0,len(bricks_new)):
             if fd.match_bricks(bricks_old[i],bricks_new[j]) == 1:
                 flag = 1
-        if flag == 0: #brick doesn't exist in old structure
+                break
+        if flag == 0: #brick doesn't exist in new structure
             dis_list.append(bricks_old[i]) 
             if bricks_old[i]['z']<lowest['z']:
                 lowest = bricks_old[i]
@@ -37,13 +38,14 @@ def reassemble(bricks_old,bricks_new,model_old,model_new):
         for j in range(0,len(bricks_old)):
             if fd.match_bricks(bricks_new[i],bricks_old[j]) == 1:
                 flag = 1
+                break
         if flag == 0: #brick doesn't exist in old structure
             if bricks_new[i]['z']<lowest['z']:
                 lowest = bricks_new[i]
 
     # find min no. bricks to safely disasseble
     for i in range(0,len(dis_list)):
-        constraints = fd.brick_constraints(dis_list[i],updated_model)
+        constraints = fd.brick_constraints(dis_list[i],copy.deepcopy(updated_model))
         if pickable(dis_list[i]['b'],constraints) != 1:                  # if not pickable: find neighbouring bricks to remove
             remove_bricks = critical_neighbours(constraints,dis_list[i],updated_model)
             for j in range(0,len(remove_bricks)):
@@ -99,25 +101,62 @@ def reassemble(bricks_old,bricks_new,model_old,model_new):
 # pickable if constraints pass all masks
 def pickable(b,constraints):
     if b == 0:
-        for i in range(0,len(dis.pick_masks)):
-            if constraints&dis.pick_masks[0][i] == 0:                      # if constraints allow a certain pick...
+        for i in range(0,len(dis.pick_masks[0])):
+            if constraints&dis.pick_masks[0][i][0] == 0:                      # if constraints allow a certain pick...
+                return 1
+        # comment out loop for flex
+        for i in range(0,len(dis.pick_masks[2])):
+            if constraints&dis.pick_masks[2][i][0] == 0:                      # if constraints allow a certain pick...
                 return 1
     elif b == 1:
-        for i in range(0,len(dis.pick_masks)):
-            if constraints&dis.pick_masks[1][i] == 0:                      # if constraints allow a certain pick...
+        for i in range(0,len(dis.pick_masks[1])):
+            if constraints&dis.pick_masks[1][i][0] == 0:                      # if constraints allow a certain pick...
+                return 1
+        # comment out loop for flex
+        for i in range(0,len(dis.pick_masks[3])):
+            if constraints&dis.pick_masks[3][i][0] == 0:                      # if constraints allow a certain pick...
                 return 1
     return 0
 
-# i not pickable: find min no. of bricks to remove to make pickable
+# if not pickable: find min no. of bricks to remove to make pickable
 def critical_neighbours(constraints,brick,updated_model):
-    remove = constraints&dis.pick_masks[0][0]
-    remove_bricks = list(find_bricks(remove,brick,updated_model))
-    for i in range(1,len(dis.pick_masks[0])):
-        remove = constraints&dis.pick_masks[0][i]
-        bricks = find_bricks(remove,brick,updated_model)
-        if len(bricks)<len(remove_bricks):
-            remove_bricks = []
-            remove_bricks = copy.deepcopy(bricks)
+    remove = 0
+    remove_bricks = []
+
+    if brick['b'] == 0:
+        remove = constraints&dis.pick_masks[0][0][0]
+        remove_bricks = list(find_bricks(remove,brick,updated_model))
+        for i in range(1,len(dis.pick_masks[0])):
+            remove = constraints&dis.pick_masks[0][i][0]
+            bricks = find_bricks(remove,brick,updated_model)
+            if len(bricks)<len(remove_bricks):
+                remove_bricks = []
+                remove_bricks = copy.deepcopy(bricks)
+
+        for i in range(0,len(dis.pick_masks[2])):
+            remove = constraints&dis.pick_masks[2][i][0]
+            bricks = find_bricks(remove,brick,updated_model)
+            if len(bricks)<len(remove_bricks):
+                remove_bricks = []
+                remove_bricks = copy.deepcopy(bricks)
+
+    if brick['b'] == 1:
+        remove = constraints&dis.pick_masks[1][0][0]
+        remove_bricks = list(find_bricks(remove,brick,updated_model))
+        for i in range(1,len(dis.pick_masks[1])):
+            remove = constraints&dis.pick_masks[1][i][0]
+            bricks = find_bricks(remove,brick,updated_model)
+            if len(bricks)<len(remove_bricks):
+                remove_bricks = []
+                remove_bricks = copy.deepcopy(bricks)
+
+        for i in range(0,len(dis.pick_masks[3])):
+            remove = constraints&dis.pick_masks[3][i][0]
+            bricks = find_bricks(remove,brick,updated_model)
+            if len(bricks)<len(remove_bricks):
+                remove_bricks = []
+                remove_bricks = copy.deepcopy(bricks)
+
     return remove_bricks
 
 # find bricks contributing to the 'remove' part of constraints
@@ -207,25 +246,35 @@ def find_bricks(remove,brick,updated_model):
 
 # given a constraint location, find the contributing brick
 def find_brick(x,y,z,updated_model):
-    brick = {'x':x,'y':y,'z':z,'r':0,'p':1,'xe':0,'ye':0,'b':1}
+    # locate top left corner
+    y0 = 0
+    x0 = 0
     n = 0
-    while updated_model[z][y-n][x] == updated_model[z][y][x]:
-        brick['y']=y-n
+    while y-n > 0:
+        if updated_model[z][y-n][x] != updated_model[z][y][x]:
+            y0 = y-n+1
+            break
         n+=1
     n = 0
-
-    while updated_model[z][brick['y']][x-n] == updated_model[z][brick['y']][x]:
-        brick['x']=x-n
+    while x-n > 0:
+        if updated_model[z][y0][x-n] != updated_model[z][y0][x]:
+            x0 = x-n+1
+            break
         n+=1
 
-    if x < 31 and y < 13:
-        if updated_model[brick['z']][brick['y']-3][brick['x']+1] == updated_model[brick['z']][brick['y']][brick['x']]:    # vertical brick, 'r' = 0 and default picking location in centre of brick
-            brick['r']=0
-            brick['b']=0
-    if x < 29 and y < 15:
-        if updated_model[brick['z']][brick['y']+1][brick['x']+3] == updated_model[brick['z']][brick['y']][brick['x']]:    # horizontal brick, 'r' = 90 and default picking location in centre of brick
-            brick['r']=90
-            brick['b']=0
+    flag = 0
+    # compare with opposite conrner for brick info
+    if x0 < 31 and y0 < 13 and flag == 0:
+        if updated_model[z][y0+3][x0+1] == updated_model[z][y0][x0]:    # vertical brick, 'r' = 0 and default picking location in centre of brick
+            brick = {'x':x0,'y':y0,'z':z,'r':0,'p':1,'xe':0,'ye':0,'b':0}
+            flag = 1
+    if x0 < 29 and y0 < 15 and flag == 0:
+        if updated_model[z][y0+1][x0+3] == updated_model[z][y0][x0]:    # horizontal brick, 'r' = 90 and default picking location in centre of brick
+            brick = {'x':x0,'y':y0,'z':z,'r':90,'p':1,'xe':0,'ye':0,'b':0}
+            flag = 1
+    if x0 < 31 and y0 < 15 and flag == 0:
+        if updated_model[z][y0+1][x0+1] == updated_model[z][y0][x0]:    # 2x2 brick, default picking location in centre of brick
+            brick = {'x':x0,'y':y0,'z':z,'r':0,'p':0,'xe':0,'ye':0,'b':1}
 
     return brick
 

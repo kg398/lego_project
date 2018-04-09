@@ -110,7 +110,7 @@ def safe_ur_move(c,Pose,CMD,Speed=0.75):
                 i_Pose = interpolate_pose(demand_Pose,Pose2,alpha*i)
                 #print i_Pose
                 # Send new demand_Pose
-                msg = socket_send(c,sPose=i_Pose,sSpeed=0.75,sCMD=4)
+                msg = socket_send(c,sPose=i_Pose,sSpeed=Speed,sCMD=4)
                 # If rejected, increment number of steps and restart for loop
                 if msg == "no_safe_move_found":
                     n = n+1

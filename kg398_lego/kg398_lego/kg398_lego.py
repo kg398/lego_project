@@ -17,6 +17,7 @@ import assembly as ass
 import disassembly as dis
 import reassembly as rea
 import flex_reassembly as flx
+import game_of_life as gol
 
 #import sys
 
@@ -155,9 +156,6 @@ def main():
             print "current joints: ", current_Joints
 
         if task == "dis":
-            ipt = raw_input("Open?(y/n)")
-            if ipt == "y":
-                ic.super_serial_send(ser_ee,"G",51)
             model = fd.import_file("example.txt")
             bricks = fd.decode_file(model)
             que,opt = dis.sort_bricks_dis(bricks,model)
@@ -166,9 +164,6 @@ def main():
                     print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['p']
                 else:
                     print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z'],', ',que[i]['p']
-            ipt = raw_input("continue?")
-            #lm.assemble(c,ser_ee,bricks)
-            #ipt = raw_input("continue?")
             lm.disassemble(c,ser_ee,que)
 
         if task == "disre":
@@ -189,9 +184,6 @@ def main():
             lm.disassemble(c,ser_ee,que)
 
         if task == "ass":
-            ipt = raw_input("Open?(y/n)")
-            if ipt == "y":
-                ic.super_serial_send(ser_ee,"G",51)
             model = fd.import_file("example.txt")
             bricks = fd.decode_file(model)
             que,opt = ass.sort_bricks_ass(bricks,model)
@@ -201,9 +193,6 @@ def main():
                     print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['p']
                 else:
                     print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z'],', ',que[i]['p']
-            ipt = raw_input("continue?")
-            #lm.assemble(c,ser_ee,bricks)
-            #ipt = raw_input("continue?")
             lm.assemble(c,ser_ee,que)
 
         if task == "assre":
@@ -487,4 +476,8 @@ def main():
             ipt = raw_input("Refill hopper and press enter to continue")
             toc = time.time()
             print toc-tic
+        if task == 'gol':
+            nbricks = int(raw_input("Number of starting bricks: "))
+            iter = int(raw_input("Number of iterations: "))
+            gol.game_of_life(c,ser_ee,nbricks,iter)
 if __name__ == '__main__': main()

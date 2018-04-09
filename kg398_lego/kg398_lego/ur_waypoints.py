@@ -45,7 +45,7 @@ Hopper1_feed0_joints = {"x": 121.94, "y": -54.07, "z": 101.25, "rx": -137.17, "r
 Hopper1_feed1 = {"x": 409.45, "y": -467.41, "z": 9, "rx": 0.0*180/math.pi, "ry": 3.1415*180/math.pi, "rz": 0.0000*180/math.pi}
 Hopper1_feed1_joints = {"x": 121.53, "y": -53.52, "z": 100.22, "rx": -136.70, "ry": -89.81, "rz": 31.80}
 
-Hopper1_feed2 = {"x": 409.24, "y": -475.78, "z": 9, "rx": 0.0*180/math.pi, "ry": 3.1407*180/math.pi, "rz": 0.0000*180/math.pi}
+Hopper1_feed2 = {"x": 408.90, "y": -475.28, "z": 9, "rx": 0.0*180/math.pi, "ry": 3.1407*180/math.pi, "rz": 0.0000*180/math.pi}
 Hopper1_feed2_joints = {"x": 121.11, "y": -52.75, "z": 99.13, "rx": -136.39, "ry": -89.80, "rz": 31.38}
 
 Hopper1_stow = {"x": 431.41, "y": 407.29, "z": 461.49, "rx": 0.0566*180/math.pi, "ry": 3.0581*180/math.pi, "rz": 0.7245*180/math.pi}

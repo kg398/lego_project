@@ -39,17 +39,23 @@ case_masks = [[[4095,1,0,0,0]],#0
               [[255,2,1,-1,0.4],[447,1,1,-1,0.4],[831,0,1,-1,0.4],[1011,0,1,1,0.4],[1014,1,1,1,0.4],[1020,2,1,1,0.4],[3279,2,-1,-1,0.4],[3471,1,-1,-1,0.4],[3855,0,-1,-1,0.4],[4035,0,-1,1,0.4],[4038,1,-1,1,0.4],[4044,2,-1,1,0.4]],#4
               [[975,1,0,0,1]],#2
               [[3324,2,0,0,1],[3510,1,0,0,1],[3891,0,0,0,1]],#5
-              [[15,3,0,-1,1.1],[960,3,0,1,1.1]],#tool
+              [[15,3,0,-1,1.1],[960,3,0,1,1.1]],#tool 0
+              [[63,3,1,-1,1.2],[1008,3,1,1,1.2],[4032,3,-1,1,1.2],[3087,3,-1,-1,1.2]],#tool 1
               [[207,2,0,-1,1.2],[399,1,0,-1,1.2],[783,0,0,-1,1.2],[963,0,0,1,1.2],[966,1,0,1,1.2],[972,2,0,1,1.2]],#7
               [[252,2,1,0,1.2],[438,1,1,0,1.2],[819,0,1,0,1.2],[3276,2,-1,0,1.2],[3462,1,-1,0,1.2],[3843,0,-1,0,1.2]],#6
-              [[204,2,0,0,2],[390,1,0,0,2],[771,0,0,0,2]]]#8
+              [[3135,3,0,-1,1.5],[4080,3,0,1,1.5]],#tool 2
+              [[204,2,0,0,2],[390,1,0,0,2],[771,0,0,0,2]],#8
+              [[0,3,0,0,5]]]#tool 3
 
 # 2x2 bricks
 place_masks1 = [204,51]
 # [case][subcase][mask,p , xe, ye, r, cost]
 case_masks1 = [[[255,0,0,0,0,0]],#0
                [[63,0,1,0,90,0.2],[207,0,0,-1,0,0.2],[243,0,-1,0,90,0.2],[252,0,0,1,0,0.2]],#1
-               [[51,0,0,0,0,1],[204,0,0,0,90,1]]]#2
+               [[51,0,0,0,0,1],[204,0,0,0,90,1]],#2
+               [[15,3,1,-1,0,1.2],[60,3,1,1,0,1.2],[240,3,-1,1,0,1.2],[195,3,-1,-1,0,1.2]],#tool 0
+               [[3,3,0,-1,0,2],[12,3,1,0,0,2],[48,3,0,1,0,2],[192,3,-1,0,0,2]],#tool 1
+               [[0,3,0,0,0,5]]]#tool 2
 
 # master function for sorting brick list into a disassemble que, quick sort(not always optimal)
 # -identify separate layers
@@ -351,23 +357,25 @@ def list_placing(bricks,model):
 def update_placing(brick,constraints):
     p = 0
     if brick['b']==0:
-        for i in range(0,9):
-            for j in range(0,len(case_masks[8-i])):
-                if constraints & case_masks[8-i][j][0] == 0:
-                    brick['p']=case_masks[8-i][j][1]
-                    brick['xe']=case_masks[8-i][j][2]
-                    brick['ye']=case_masks[8-i][j][3]
+        l = len(case_masks)-1
+        for i in range(0,l+1):
+            for j in range(0,len(case_masks[l-i])):
+                if constraints & case_masks[l-i][j][0] == 0:
+                    brick['p']=case_masks[l-i][j][1]
+                    brick['xe']=case_masks[l-i][j][2]
+                    brick['ye']=case_masks[l-i][j][3]
                     #p = Prob[8-i]
 
 
     elif brick['b']==1:
-        for i in range(0,3):
-            for j in range(0,len(case_masks1[2-i])):
-                if constraints & case_masks1[2-i][j][0] == 0:
-                    brick['p']=case_masks1[2-i][j][1]
-                    brick['xe']=case_masks1[2-i][j][2]
-                    brick['ye']=case_masks1[2-i][j][3]
-                    brick['r']=case_masks1[2-i][j][4]
+        l = len(case_masks1) - 1
+        for i in range(0,l+1):
+            for j in range(0,len(case_masks1[l-i])):
+                if constraints & case_masks1[l-i][j][0] == 0:
+                    brick['p']=case_masks1[l-i][j][1]
+                    brick['xe']=case_masks1[l-i][j][2]
+                    brick['ye']=case_masks1[l-i][j][3]
+                    brick['r']=case_masks1[l-i][j][4]
                     #p = Prob[2-i]
 
     return brick#,p #temp delete p

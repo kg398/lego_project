@@ -74,12 +74,41 @@ def decode_file(model):
         for y in range(0,16):
             for x in range(0,32):
                 if model[z][y][x]!=0:                           # find brick by comparing corners
-                    if x < 31 and y < 13:
-                        if model[z][y+3][x+1] == model[z][y][x]:    # vertical brick, 'r' = 0 and default picking location in centre of brick
-                            bricks.append({'x':x,'y':y,'z':z,'r':0,'p':1,'xe':0,'ye':0,'b':0})
-                    if x < 29 and y < 15:
-                        if model[z][y+1][x+3] == model[z][y][x]:    # horizontal brick, 'r' = 90 and default picking location in centre of brick
-                            bricks.append({'x':x,'y':y,'z':z,'r':90,'p':1,'xe':0,'ye':0,'b':0})
+                    # locate top left corner
+                    y0 = 0
+                    x0 = 0
+                    n = 0
+                    while y-n > 0:
+                        if model[z][y-n][x] != model[z][y][x]:
+                            y0 = y-n+1
+                            break
+                        n+=1
+                    n = 0
+                    while x-n > 0:
+                        if model[z][y0][x-n] != model[z][y0][x]:
+                            x0 = x-n+1
+                            break
+                        n+=1
+
+                    flag = 0
+                    for i in range(0,len(bricks)):              # compare with already located bricks
+                        if bricks[i]['x'] == x0 and bricks[i]['y'] == y0 and bricks[i]['z'] == z:
+                            flag = 1
+                            break
+
+                    # compare with opposite conrner for brick info
+                    if x0 < 31 and y0 < 13 and flag == 0:
+                        if model[z][y0+3][x0+1] == model[z][y0][x0]:    # vertical brick, 'r' = 0 and default picking location in centre of brick
+                            bricks.append({'x':x0,'y':y0,'z':z,'r':0,'p':1,'xe':0,'ye':0,'b':0})
+                            flag = 1
+                    if x0 < 29 and y0 < 15 and flag == 0:
+                        if model[z][y0+1][x0+3] == model[z][y0][x0]:    # horizontal brick, 'r' = 90 and default picking location in centre of brick
+                            bricks.append({'x':x0,'y':y0,'z':z,'r':90,'p':1,'xe':0,'ye':0,'b':0})
+                            flag = 1
+                    if x0 < 31 and y0 < 15 and flag == 0:
+                        if model[z][y0+1][x0+1] == model[z][y0][x0]:    # 2x2 brick, default picking location in centre of brick
+                            bricks.append({'x':x0,'y':y0,'z':z,'r':0,'p':0,'xe':0,'ye':0,'b':1})
+
     return bricks
 
 # optimises picking order of list, assumes any order is valid
