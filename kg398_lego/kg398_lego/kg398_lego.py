@@ -159,12 +159,11 @@ def main():
             model = fd.import_file("example.txt")
             bricks = fd.decode_file(model)
             que,opt = dis.sort_bricks_dis(bricks,model)
+            print opt
+            print "x\ty\tp\tr\tex\tey"
             for i in range(0,len(que)):
-                if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['p']
-                else:
-                    print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z'],', ',que[i]['p']
-            lm.disassemble(c,ser_ee,que)
+                print que[i]['x'],'\t',que[i]['y'],'\t',que[i]['p'],'\t',que[i]['r'],'\t',que[i]['ye'],'\t',que[i]['xe']
+            lm.clean_disassemble(c,ser_ee,que)
 
         if task == "disre":
             ipt = raw_input("Open?(y/n)")
@@ -173,27 +172,26 @@ def main():
             model = fd.import_file("examplere.txt")
             bricks = fd.decode_file(model)
             que,opt = dis.sort_bricks_dis(bricks,model)
+            print opt
+            print "x\ty\tp\tr\tex\tey"
             for i in range(0,len(que)):
-                if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['p']
-                else:
-                    print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z'],', ',que[i]['p']
+                print que[i]['x'],'\t',que[i]['y'],'\t',que[i]['p'],'\t',que[i]['r'],'\t',que[i]['ye'],'\t',que[i]['xe']
             ipt = raw_input("continue?")
             #lm.assemble(c,ser_ee,bricks)
             #ipt = raw_input("continue?")
-            lm.disassemble(c,ser_ee,que)
+            lm.clean_disassemble(c,ser_ee,que)
 
         if task == "ass":
             model = fd.import_file("example.txt")
             bricks = fd.decode_file(model)
             que,opt = ass.sort_bricks_ass(bricks,model)
             print opt
+            print "x\ty\tp\tr\tex\tey"
             for i in range(0,len(que)):
-                if que[i]['r'] == 0 or que[i]['r'] == 180:
-                    print que[i]['x'],', ',que[i]['y']+que[i]['p'],', ',que[i]['z'],', ',que[i]['p']
-                else:
-                    print que[i]['x']+que[i]['p'],', ',que[i]['y'],', ',que[i]['z'],', ',que[i]['p']
-            lm.assemble(c,ser_ee,que)
+                print que[i]['x'],'\t',que[i]['y'],'\t',que[i]['p'],'\t',que[i]['r'],'\t',que[i]['ye'],'\t',que[i]['xe']
+            ipt = raw_input('Continue?')
+            if ipt == 'y':
+                lm.clean_assemble(c,ser_ee,que)
 
         if task == "assre":
             ipt = raw_input("Open?(y/n)")
@@ -221,7 +219,9 @@ def main():
             h = int(raw_input("H: "))
             s = int(raw_input("stack: "))
             msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
-            lm.stack_place(c,ser_ee,sH=h,stack=s)
+            if s == 2:
+                lm.feed_place2(c,ser_ee,sH=h)
+            lm.feed_place(c,ser_ee,H=h)
             msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)
         if task == "pick":
             msg = ic.safe_ur_move(c,Pose=dict(wp.home_joints),CMD=2)

@@ -39,23 +39,23 @@ case_masks = [[[4095,1,0,0,0]],#0
               [[255,2,1,-1,0.4],[447,1,1,-1,0.4],[831,0,1,-1,0.4],[1011,0,1,1,0.4],[1014,1,1,1,0.4],[1020,2,1,1,0.4],[3279,2,-1,-1,0.4],[3471,1,-1,-1,0.4],[3855,0,-1,-1,0.4],[4035,0,-1,1,0.4],[4038,1,-1,1,0.4],[4044,2,-1,1,0.4]],#4
               [[975,1,0,0,1]],#2
               [[3324,2,0,0,1],[3510,1,0,0,1],[3891,0,0,0,1]],#5
-              [[15,3,0,-1,1.1],[960,3,0,1,1.1]],#tool 0
+              [[3135,3,0,-1,1.1],[4080,3,0,1,1.1]],#tool 0
               [[63,3,1,-1,1.2],[1008,3,1,1,1.2],[4032,3,-1,1,1.2],[3087,3,-1,-1,1.2]],#tool 1
               [[207,2,0,-1,1.2],[399,1,0,-1,1.2],[783,0,0,-1,1.2],[963,0,0,1,1.2],[966,1,0,1,1.2],[972,2,0,1,1.2]],#7
               [[252,2,1,0,1.2],[438,1,1,0,1.2],[819,0,1,0,1.2],[3276,2,-1,0,1.2],[3462,1,-1,0,1.2],[3843,0,-1,0,1.2]],#6
-              [[3135,3,0,-1,1.5],[4080,3,0,1,1.5]],#tool 2
+              [[15,3,0,-1,1.5],[960,3,0,1,1.5]],#tool 2
               [[204,2,0,0,2],[390,1,0,0,2],[771,0,0,0,2]],#8
               [[0,3,0,0,5]]]#tool 3
 
 # 2x2 bricks
-place_masks1 = [204,51]
+place_masks1 = [252,243,207,63]#[204,51] swap for looser constraints
 # [case][subcase][mask,p , xe, ye, r, cost]
 case_masks1 = [[[255,0,0,0,0,0]],#0
                [[63,0,1,0,90,0.2],[207,0,0,-1,0,0.2],[243,0,-1,0,90,0.2],[252,0,0,1,0,0.2]],#1
-               [[51,0,0,0,0,1],[204,0,0,0,90,1]],#2
+               #[[51,0,0,0,90,1],[204,0,0,0,0,1]],#2 uncomment for looser constraints
                [[15,3,1,-1,0,1.2],[60,3,1,1,0,1.2],[240,3,-1,1,0,1.2],[195,3,-1,-1,0,1.2]],#tool 0
-               [[3,3,0,-1,0,2],[12,3,1,0,0,2],[48,3,0,1,0,2],[192,3,-1,0,0,2]],#tool 1
-               [[0,3,0,0,0,5]]]#tool 2
+               ]#[[3,3,0,-1,0,2],[12,3,1,0,0,2],[48,3,0,1,0,2],[192,3,-1,0,0,2]],#tool 1
+               #[[0,3,0,0,0,5]]]#tool 2
 
 # master function for sorting brick list into a disassemble que, quick sort(not always optimal)
 # -identify separate layers
@@ -75,14 +75,17 @@ def sort_bricks_ass(bricks,model):
     layers.append(len(bricks))
 
     # sort each layer into sub-groups, label end of each sub-group
+    opt = 'y'
     sub_groups = []
     for i in range(0,len(layers)-1):
         #sub_groups.append([0])
         #print "layer ", i,": "
-        sub_group,build_que[layers[i]:layers[i+1]] = copy.deepcopy(sort_layer_ass(bricks[layers[i]:layers[i+1]],model))
-        #if sub_group == 'n':
-        #    return build_que[layers[i]:layers[i+1]],'n'
-        #for j in range(0,len(sub_group)):
+        sub_group,build_que[layers[i]:layers[i+1]],opt = copy.deepcopy(sort_layer_ass(bricks[layers[i]:layers[i+1]],model))
+
+        # only for gol
+        if opt == 'n':
+            return build_que[layers[i]:layers[i+1]],'n'
+
         sub_groups.append(sub_group)
 
     # optimise picking order of each sub-group
@@ -95,7 +98,7 @@ def sort_bricks_ass(bricks,model):
     # update picking method
     build_que = list(list_placing(build_que,model))
 
-    return build_que,'y'#,p #temp delete p
+    return build_que,opt#,p #temp delete p
 
 # master function for brute force sort
 # -identify separate layers
@@ -132,8 +135,18 @@ def sort_layer_ass(sub_bricks,model):
 
     while placeable == 0:
         group, build_que[0:groups[0]], placeable = sort_placeable_ass(build_que[0:groups[0]],updated_model)
-        if group == len(build_que[0:groups[0]]):
-            return 'n',build_que[0:groups[0]]
+        if group == len(build_que[0:groups[0]]): # if all bricks are unplaceable by std method
+            # additional tool sort for gol reassembly
+            group, build_que[0:groups[0]], placeable = sort_placeable_tool(build_que[0:groups[0]],updated_model)
+            if group == len(build_que[0:groups[0]]): # if all bricks are unplaceable by tool method (only true if some cases are removed)
+                return group,build_que[0:groups[0]],'n'
+
+            # std tool reassembly
+            #groups.insert(0,0)
+            #return groups,build_que,'n'
+
+            # reassembly without tool
+            #return 'n',build_que[0:groups[0]]
         groups.insert(0,group)
         updated_model = fd.update_model(build_que[groups[0]:groups[1]],updated_model)
 
@@ -151,7 +164,7 @@ def sort_layer_ass(sub_bricks,model):
         #            print build_que[i]['x']+build_que[i]['p'],', ',build_que[i]['y']
         #print '\n'
 
-    return groups,build_que
+    return groups,build_que,'y'
 
 # re-orders a brick list into a valid picking order, label end of each sub-group
 def sort_placeable_ass(sub_bricks,model):
@@ -179,7 +192,15 @@ def sort_placeable_ass(sub_bricks,model):
                 nplace += 1
 
         elif sub_bricks[i]['b']==1:
-            if constraints&place_masks1[1] == 0:                    # if constraints allow a certain pick...
+            if constraints&place_masks1[3] == 0:                    # if constraints allow a certain pick...
+                sub_que[place] = copy.deepcopy(sub_bricks[i])
+                sub_que[place]['p'] = 0
+                place -= 1
+            elif constraints&place_masks1[2] == 0:
+                sub_que[place] = copy.deepcopy(sub_bricks[i])
+                sub_que[place]['p'] = 0
+                place -= 1
+            elif constraints&place_masks1[1] == 0:
                 sub_que[place] = copy.deepcopy(sub_bricks[i])
                 sub_que[place]['p'] = 0
                 place -= 1
@@ -205,6 +226,50 @@ def sort_placeable_ass(sub_bricks,model):
     #for i in range(sub_groups,len(sub_que)):
     #            print sub_que[i]['x']+sub_que[i]['px'],', ',sub_que[i]['y']+sub_que[i]['py']
     return sub_groups, sub_que, placeable
+
+# re-orders a brick list into a valid picking order, label end of each sub-group
+# only for game of life (all 2x2 bricks)
+def sort_placeable_tool(sub_bricks,model):
+    sub_que = copy.deepcopy(sub_bricks)
+    place = len(sub_bricks)-1
+    nplace = 0
+    placeable = 0
+    for i in range(0,len(sub_bricks)):                              # sort bricks into pickable and non-pickable, boundary given by result of 'pick'
+        constraints = fd.brick_constraints(sub_bricks[i],model)
+
+        if sub_bricks[i]['b']==1:
+            if constraints&case_masks1[2][0][0] == 0:                    # if constraints allow a certain pick..., change 2 -> 3 for looser constraints
+                sub_que[place] = copy.deepcopy(sub_bricks[i])
+                place -= 1
+            elif constraints&case_masks1[2][1][0] == 0:
+                sub_que[place] = copy.deepcopy(sub_bricks[i])
+                place -= 1
+            elif constraints&case_masks1[2][2][0] == 0:                    # if constraints allow a certain pick...
+                sub_que[place] = copy.deepcopy(sub_bricks[i])
+                place -= 1
+            elif constraints&case_masks1[2][3][0] == 0:
+                sub_que[place] = copy.deepcopy(sub_bricks[i])
+                place -= 1
+
+            else:                                                   # if not pickable...
+                sub_que[nplace] = copy.deepcopy(sub_bricks[i])
+                nplace += 1
+
+    #if place != len(sub_bricks)-1:                                               # if no pickable bricks, can't disassemble so return error
+    sub_groups = place+1
+    #else:
+    #    return 'no picks'
+    if nplace == 0:                              # if any unpickable bricks, remove pickable from the model, re-sort list of non-pickable 
+        placeable = 1
+    #print 'pickable: '
+    #for i in range(0,sub_groups):
+    #            print sub_que[i]['x']+sub_que[i]['px'],', ',sub_que[i]['y']+sub_que[i]['py']
+    #print 'not pickable: '
+    #for i in range(sub_groups,len(sub_que)):
+    #            print sub_que[i]['x']+sub_que[i]['px'],', ',sub_que[i]['y']+sub_que[i]['py']
+    return sub_groups, sub_que, placeable
+
+
 
 # Computes optimal place order of list by evaluating the cost associated with each possible order
 def brute_force_ass(bricks,model):

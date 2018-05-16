@@ -18,6 +18,8 @@ import reassembly as rea
 
 def game_of_life(c,ser_ee,nbricks=10,iter=100):
     bricks,model = initialise_grid(nbricks)
+    assembly = []
+    disassembly = []
 
     print "------------ initial state ------------"
     print "x",","," y"
@@ -31,12 +33,12 @@ def game_of_life(c,ser_ee,nbricks=10,iter=100):
     print "x\ty\tp\tr\tex\tey"
     for i in range(0,len(que)):
         print que[i]['x'],'\t',que[i]['y'],'\t',que[i]['p'],'\t',que[i]['r'],'\t',que[i]['ye'],'\t',que[i]['xe']
-    lm.assemble(c,ser_ee,que)
+    assembly.append(que)
+    #lm.clean_assemble(c,ser_ee,que,t=False)
 
-    # ------------------------take photo here----------------------------
 
     for i in range(0,iter):
-        time.sleep(20)
+        #time.sleep(20)
         new_bricks,new_model = update_grid(bricks,copy.deepcopy(model))
         dis_list, ass_list = rea.reassemble(bricks,new_bricks,copy.deepcopy(model),copy.deepcopy(new_model))
         print "-------------- new state --------------"
@@ -52,7 +54,8 @@ def game_of_life(c,ser_ee,nbricks=10,iter=100):
         print "x\ty\tp\tr\tex\tey"
         for i in range(0,len(que)):
             print que[i]['x'],'\t',que[i]['y'],'\t',que[i]['p'],'\t',que[i]['r'],'\t',que[i]['ye'],'\t',que[i]['xe']
-        lm.disassemble(c,ser_ee,que)
+        disassembly.append(que)
+        #lm.clean_disassemble(c,ser_ee,que,t=False)
 
         que,opt = ass.sort_bricks_ass(ass_list,copy.deepcopy(new_model))
         print "\nAssembly sort output: ",opt
@@ -61,15 +64,24 @@ def game_of_life(c,ser_ee,nbricks=10,iter=100):
         print "x\ty\tp\tr\tex\tey"
         for i in range(0,len(que)):
             print que[i]['x'],'\t',que[i]['y'],'\t',que[i]['p'],'\t',que[i]['r'],'\t',que[i]['ye'],'\t',que[i]['xe']
-        lm.assemble(c,ser_ee,que)
+        assembly.append(que)
+        #lm.clean_assemble(c,ser_ee,que,t=False)
 
-        # ------------------------take photo here----------------------------
         
-        if len(new_bricks) == 0:
-            print 'No bricks remaining'
+        if len(ass_list) == 0 and len(dis_list) == 0:
+            #print 'No bricks remaining'
             break
         bricks = copy.deepcopy(new_bricks)
         model = copy.deepcopy(new_model)
+
+    ipt = raw_input('Continue?(y/n)')
+    if ipt == 'y':
+        lm.clean_assemble(c,ser_ee,assembly[0],t=False)
+        for i in range(0,iter):
+            time.sleep(20)
+            lm.clean_disassemble(c,ser_ee,disassembly[i],t=False)
+            lm.clean_assemble(c,ser_ee,assembly[i+1],t=False)
+
     return
 
 def initialise_grid(nbricks):
